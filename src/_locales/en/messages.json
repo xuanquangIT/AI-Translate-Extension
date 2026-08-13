@@ -1,0 +1,58 @@
+{
+  "extensionName": {
+    "message": "LingoFlux Translator",
+    "description": "The name of the extension"
+  },
+  "extensionDescription": {
+    "message": "Translate selected text or whole pages with an OpenAI-compatible or Anthropic-compatible provider you choose.",
+    "description": "The description of the extension shown in the browser's extension page and web stores"
+  },
+  "translatePage": {
+    "message": "Translate Page",
+    "description": "Button text for translating the entire page"
+  },
+  "translateSelection": {
+    "message": "Translate Selection",
+    "description": "Button text for translating selected text"
+  },
+  "restoreOriginal": {
+    "message": "Restore Original",
+    "description": "Button text for restoring original page content"
+  },
+  "settings": {
+    "message": "Settings",
+    "description": "Settings tab label"
+  },
+  "apiKeys": {
+    "message": "Providers",
+    "description": "Provider configuration section header"
+  },
+  "sourceLanguage": {
+    "message": "Source Language",
+    "description": "Label for source language selector"
+  },
+  "targetLanguage": {
+    "message": "Target Language",
+    "description": "Label for target language selector"
+  },
+  "autoDetect": {
+    "message": "Auto Detect",
+    "description": "Auto-detect language option"
+  },
+  "translating": {
+    "message": "Translating...",
+    "description": "Status message while translation is in progress"
+  },
+  "translated": {
+    "message": "Translated!",
+    "description": "Status message when translation is complete"
+  },
+  "error": {
+    "message": "Error",
+    "description": "Error prefix"
+  },
+  "noApiKey": {
+    "message": "No API key configured",
+    "description": "Error when no API key is set"
+  }
+}

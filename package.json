@@ -1,0 +1,43 @@
+{
+  "name": "lingoflux-translator",
+  "version": "1.3.0",
+  "private": true,
+  "description": "Fast browser translation with any OpenAI-compatible or Anthropic-compatible provider.",
+  "author": "xuanquangIT and LingoFlux contributors",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/xuanquangIT/AI-Translate-Extension"
+  },
+  "homepage": "https://github.com/xuanquangIT/AI-Translate-Extension#readme",
+  "bugs": {
+    "url": "https://github.com/xuanquangIT/AI-Translate-Extension/issues"
+  },
+  "keywords": [
+    "chrome-extension",
+    "edge-extension",
+    "translator",
+    "ai",
+    "openai-compatible",
+    "anthropic-compatible",
+    "llm-provider",
+    "translation",
+    "browser-extension"
+  ],
+  "scripts": {
+    "build": "node scripts/build.js",
+    "build:zip": "node scripts/build.js --zip",
+    "clean": "node scripts/clean.js",
+    "check:syntax": "node --check src/scripts/background.js && node --check src/scripts/content.js && node --check src/scripts/lib/api.js && node --check src/scripts/lib/storage.js && node --check src/pages/popup/popup.js && node --check src/pages/options/options.js",
+    "test": "node scripts/test-core.mjs",
+    "verify": "npm run check:syntax && npm test && npm run build",
+    "test:live": "node scripts/smoke.js",
+    "dev": "echo Load src/ folder as unpacked extension in browser"
+  },
+  "devDependencies": {
+    "archiver": "^8.0.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
