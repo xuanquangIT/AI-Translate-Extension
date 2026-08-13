@@ -1,0 +1,61 @@
+name: Feature request
+description: Propose a focused improvement that fits LingoFlux's translation purpose.
+title: "[Feature]: "
+labels:
+  - enhancement
+body:
+  - type: markdown
+    attributes:
+      value: |
+        LingoFlux has a narrow store purpose: user-initiated browser translation through a user-configured provider. Explain how the proposal strengthens that purpose without adding unrelated behavior or unnecessary permissions.
+  - type: textarea
+    id: problem
+    attributes:
+      label: User problem
+      description: Describe the concrete workflow or limitation, not only the proposed implementation.
+    validations:
+      required: true
+  - type: textarea
+    id: outcome
+    attributes:
+      label: Desired outcome
+      description: What should the user be able to do?
+    validations:
+      required: true
+  - type: dropdown
+    id: area
+    attributes:
+      label: Primary area
+      options:
+        - Popup
+        - Settings
+        - Selection or page DOM
+        - Provider compatibility
+        - Storage or migration
+        - Accessibility or localization
+        - Build, test, or release
+        - Documentation
+    validations:
+      required: true
+  - type: textarea
+    id: impact
+    attributes:
+      label: Security, privacy, and permission impact
+      description: State whether the feature needs new data, hosts, permissions, remote services, or storage. Write "None known" only after considering each item.
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      description: Note current workarounds or smaller approaches.
+  - type: checkboxes
+    id: confirmation
+    attributes:
+      label: Confirmation
+      options:
+        - label: This proposal supports LingoFlux's single translation purpose.
+          required: true
+        - label: I have not included credentials, confidential text, or personal data.
+          required: true
+

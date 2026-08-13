@@ -1,0 +1,99 @@
+name: Bug report
+description: Report a reproducible problem in LingoFlux Translator.
+title: "[Bug]: "
+labels:
+  - bug
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting a bug. Remove API keys, authorization headers, private page text, and personal data before submitting. Security vulnerabilities belong in the private process described in `SECURITY.md`.
+  - type: input
+    id: version
+    attributes:
+      label: LingoFlux version or commit
+      description: Use the manifest version, release tag, or full commit SHA.
+      placeholder: "1.2.0 or abc1234"
+    validations:
+      required: true
+  - type: dropdown
+    id: browser
+    attributes:
+      label: Browser
+      options:
+        - Google Chrome
+        - Microsoft Edge
+        - Other Chromium browser
+        - Firefox or another unsupported browser
+    validations:
+      required: true
+  - type: input
+    id: browser_version
+    attributes:
+      label: Browser and operating-system version
+      placeholder: "Chrome 140.0.x on Windows 11 24H2"
+    validations:
+      required: true
+  - type: dropdown
+    id: install_method
+    attributes:
+      label: Installation method
+      options:
+        - dist loaded unpacked
+        - src loaded unpacked
+        - GitHub release archive
+        - Browser store
+        - Other
+    validations:
+      required: true
+  - type: dropdown
+    id: provider_type
+    attributes:
+      label: Provider interface
+      description: Do not include the provider key.
+      options:
+        - OpenAI-compatible
+        - Anthropic-compatible
+        - Not provider-related
+        - Unknown
+    validations:
+      required: true
+  - type: textarea
+    id: summary
+    attributes:
+      label: Problem summary
+      description: What happened and what did you expect instead?
+    validations:
+      required: true
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: Minimal reproduction
+      description: Use non-sensitive sample text and numbered steps.
+      placeholder: |
+        1. Open ...
+        2. Select ...
+        3. Click ...
+    validations:
+      required: true
+  - type: textarea
+    id: diagnostics
+    attributes:
+      label: Sanitized diagnostics
+      description: Include relevant popup, service-worker, or tab errors after removing secrets and page content.
+      render: shell
+  - type: textarea
+    id: validation
+    attributes:
+      label: Checks already tried
+      description: Mention extension reload, page refresh, `npm test`, or another relevant check.
+  - type: checkboxes
+    id: confirmation
+    attributes:
+      label: Safety confirmation
+      options:
+        - label: I removed API keys, authorization headers, private text, and personal data from this report.
+          required: true
+        - label: I searched existing issues and this is not a public security vulnerability report.
+          required: true
+
