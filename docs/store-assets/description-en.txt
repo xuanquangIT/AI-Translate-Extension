@@ -1,0 +1,40 @@
+LingoFlux Translator
+
+Bring-your-own-provider translation for Chrome and Microsoft Edge. Connect an OpenAI-compatible or Anthropic-compatible API, choose a model, and translate pasted text, selected text, or eligible text on the current page.
+
+BRING YOUR OWN PROVIDER
+
+Create unlimited named provider profiles. LingoFlux supports standard OpenAI-compatible /chat/completions and Anthropic-compatible /messages APIs.
+
+DYNAMIC OR MANUAL MODELS
+
+Models can be discovered from each provider's /models endpoint and cached for speed. Add manual model IDs when an endpoint does not publish a catalog.
+
+FOCUSED TRANSLATION WORKFLOW
+
+Translation jobs use timeouts, deduplication, short-lived cached results, and favorite-first fallback. Selection and full-page jobs continue in the background if the popup closes or browser focus changes.
+
+SELECTION AND PAGE TRANSLATION
+
+Select text and press T, use the floating Translate action, choose the context-menu command, or translate eligible text on an entire page. Badge mode preserves the source text; Replace mode includes a restore action.
+
+CONTROL THE OUTPUT
+
+Set a reusable system prompt, enable style preferences when needed, and choose from more than 20 languages.
+
+PRIVACY AND PROVIDER RESPONSIBILITY
+
+- No LingoFlux account, hosted translation backend, advertising, or developer-controlled analytics
+- Provider profiles and credentials are stored in the current browser profile
+- Translation content, prompts, settings, and credentials required for the request are sent directly to the provider you select
+- The provider's own privacy, retention, pricing, and content policies apply
+
+PERMISSIONS
+
+- Read and change page content: read user-requested text and insert translations
+- Storage: save settings, provider profiles, local history, and short-lived caches
+- Active tab and scripting: complete user-requested popup or context-menu actions
+- Context menus: offer the Translate selection command
+
+GitHub: https://github.com/xuanquangIT/AI-Translate-Extension
+Privacy policy: https://github.com/xuanquangIT/AI-Translate-Extension/blob/main/docs/PRIVACY.md

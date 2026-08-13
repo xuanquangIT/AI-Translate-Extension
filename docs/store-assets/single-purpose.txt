@@ -1,0 +1,1 @@
+LingoFlux provides user-initiated translation of pasted text, selected webpage text, and eligible text on the current webpage through an OpenAI-compatible or Anthropic-compatible API provider configured by the user.

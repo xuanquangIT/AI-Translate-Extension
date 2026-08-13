@@ -1,0 +1,1 @@
+Translate selected text or whole pages with an OpenAI-compatible or Anthropic-compatible provider you choose.

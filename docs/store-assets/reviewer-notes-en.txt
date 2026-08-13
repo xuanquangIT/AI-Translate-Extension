@@ -1,0 +1,15 @@
+LingoFlux is a bring-your-own-provider translation client. It does not have a LingoFlux login, publisher-operated translation backend, or shared test account.
+
+To test it, open Settings and add an API endpoint and credential that the reviewer is authorized to use. Choose either OpenAI-compatible (/models and /chat/completions) or Anthropic-compatible (/models and /messages). If /models is unavailable, enter a manual model ID. Do not use production or personal credentials in screenshots or review correspondence.
+
+Suggested test path:
+1. Save a provider and model.
+2. Paste non-sensitive sample text in the popup and choose Translate text.
+3. Open a normal HTTPS webpage, select text, and press T.
+4. Switch between Badge and Replace placement; in Replace mode use the restore action.
+5. Choose Translate page on a page with ordinary paragraph text.
+6. Reload the extension and verify persistent settings remain.
+
+The package contains no remotely hosted executable code. Network requests are data requests sent directly to the provider configured by the tester.
+
+Submission blocker: before certification, the publisher must decide whether the store reviewer requires a dedicated scoped test credential. Never commit that credential to this repository or place it in the public listing.
