@@ -28,7 +28,7 @@
     "build": "node scripts/build.js",
     "build:zip": "node scripts/build.js --zip",
     "clean": "node scripts/clean.js",
-    "check:syntax": "node --check src/scripts/background.js && node --check src/scripts/content.js && node --check src/scripts/lib/api.js && node --check src/scripts/lib/storage.js && node --check src/pages/popup/popup.js && node --check src/pages/options/options.js",
+    "check:syntax": "node --no-warnings --experimental-vm-modules scripts/check-syntax.mjs",
     "test": "node scripts/test-core.mjs",
     "verify": "npm run check:syntax && npm test && npm run build",
     "test:live": "node scripts/smoke.js",

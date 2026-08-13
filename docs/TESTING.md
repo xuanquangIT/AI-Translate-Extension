@@ -3,13 +3,9 @@
 ## Safe checks that do not require an API key
 
 ```powershell
+npm run check:syntax
+npm test
 npm run build
-node --check src/scripts/background.js
-node --check src/scripts/content.js
-node --check src/scripts/lib/api.js
-node --check src/scripts/lib/storage.js
-node --check src/pages/popup/popup.js
-node --check src/pages/options/options.js
 ```
 
 `npm run build` copies manifest, scripts, pages, assets, and locales from `src/` to `dist/`. Then inspect `dist/manifest.json` and confirm all entry-point files and imports exist.
