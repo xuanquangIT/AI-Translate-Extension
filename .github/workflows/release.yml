@@ -1,0 +1,57 @@
+name: Release package
+
+on:
+  push:
+    tags:
+      - v*
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out tagged source
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - name: Verify tag and package version
+        shell: pwsh
+        run: |
+          $packageVersion = node -p "require('./package.json').version"
+          if ("v$packageVersion" -ne "${{ github.ref_name }}") {
+            throw "Tag ${{ github.ref_name }} does not match package version $packageVersion."
+          }
+      - name: Install dependencies
+        run: npm ci
+      - name: Run credential-free verification
+        run: npm run verify
+      - name: Build release ZIP
+        run: npm run build:zip
+      - name: Create SHA-256 checksum
+        shell: pwsh
+        run: |
+          $zip = Get-ChildItem -LiteralPath $env:GITHUB_WORKSPACE -Filter 'lingoflux-v*.zip' | Select-Object -First 1
+          if (-not $zip) { throw 'Release ZIP was not created.' }
+          $checksumPath = "$($zip.FullName).sha256"
+          $hash = (Get-FileHash -LiteralPath $zip.FullName -Algorithm SHA256).Hash.ToLowerInvariant()
+          "$hash  $($zip.Name)" | Set-Content -LiteralPath $checksumPath -Encoding ascii
+          "ZIP_PATH=$($zip.FullName)" | Add-Content -LiteralPath $env:GITHUB_ENV
+          "CHECKSUM_PATH=$checksumPath" | Add-Content -LiteralPath $env:GITHUB_ENV
+      - name: Publish GitHub release
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if (gh release view "${{ github.ref_name }}" --repo "${{ github.repository }}" 2>$null) {
+            gh release upload "${{ github.ref_name }}" $env:ZIP_PATH $env:CHECKSUM_PATH --clobber --repo "${{ github.repository }}"
+          } else {
+            gh release create "${{ github.ref_name }}" $env:ZIP_PATH $env:CHECKSUM_PATH --verify-tag --generate-notes --title "LingoFlux ${{ github.ref_name }}" --repo "${{ github.repository }}"
+          }
+
