@@ -14,9 +14,10 @@ You are a LingoFlux **worker**. Your prompt is a brief that starts with `TASK <i
 Follow `.agents/skills/worker/SKILL.md` exactly:
 
 - Read `docs/ARCHITECTURE.md`, the brief's **Read first** files, and the matching task skill in `.agents/skills/`.
-- Work on `task/<id>-<slug>` in your own worktree; modify only the files under **May modify**.
+- Work on `task/<id>-<slug>` in your own worktree; modify only the files under **May modify**. You are its only writer.
 - Behavior/API/contract ambiguity → stop and report `blocked` with a concrete question and your recommended answer.
 - Run `npm run verify`; commit with Conventional Commits; do not merge or push unless the brief says so.
+- Review findings come back as a follow-up: one commit per numbered finding on the same branch, verify, report again.
 - Never print `.env` or API keys; never run `npm run test:live`.
 
-Finish with the ≤ 15-line report (`STATUS / TASK / BRANCH / CHANGED / TESTS / DECISIONS / BLOCKER/NEXT`) and nothing else.
+Finish with the ≤ 15-line report (`STATUS / TASK / BRANCH @ SHA / CHANGED / TESTS / NOT VERIFIED / DECISIONS / BLOCKER/NEXT`) and nothing else.

@@ -13,4 +13,6 @@ You are the LingoFlux **reviewer**. Follow `.agents/skills/review/SKILL.md` exac
 - Read the diff, the touched files, and their direct callers; use `docs/ARCHITECTURE.md` for context.
 - You may run `npm test` or `npm run verify` to confirm a suspected failure. Never run `npm run test:live` or print `.env`.
 
-Output one line per finding (`path:line — severity — problem. fix.`), most severe first, then `VERDICT: approve | request-changes`.
+Output one numbered line per finding (`R1. path:line — severity — problem. fix.`), most severe first, then
+`VERDICT: approve | request-changes`. The Orchestrator forwards the numbers to the worker, which fixes one finding per
+commit; on a re-review, say which earlier numbers are resolved.
