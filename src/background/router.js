@@ -25,7 +25,7 @@ import {
   toggleInstruction,
   updateInstruction
 } from '../storage/index.js';
-import { getAvailableModels, invalidateProviderCatalog } from './model-catalog.js';
+import { getAvailableModels, getProviderModelOptions, invalidateProviderCatalog } from './model-catalog.js';
 import { storageReady } from './storage-ready.js';
 import { restorePageInTab, translatePageInTab, translateSelectionInTab } from './tab-jobs.js';
 import { translatePage, translateSingleText } from './translation-service.js';
@@ -55,6 +55,8 @@ export const handlers = Object.freeze({
     await invalidateProviderCatalog(payload?.providerId);
     return getAvailableModels({ force: true });
   },
+  [M.GET_PROVIDER_MODEL_OPTIONS]: async (payload) =>
+    getProviderModelOptions({ providerId: payload?.providerId, force: Boolean(payload?.force) }),
   [M.TOGGLE_FAVORITE_MODEL]: async (payload) => toggleFavoriteModel(payload || {}),
 
   [M.GET_INSTRUCTIONS]: async () => ({ instructions: await getInstructions() }),

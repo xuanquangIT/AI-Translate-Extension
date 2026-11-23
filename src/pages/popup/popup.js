@@ -33,6 +33,11 @@ function renderFavoriteButton() {
   button.title = favorite ? 'Remove favorite' : 'Add favorite';
 }
 
+/** `state.providers` holds only ready providers (see getAvailableModels), so non-empty means "some provider is ready". */
+function emptyModelLabel() {
+  return state.providers.length ? 'Select models in Settings' : 'Configure a provider in Settings';
+}
+
 function renderModels(preferredModel = state.settings.model, preferredProvider = state.settings.modelProvider) {
   renderModelOptions($('model'), {
     models: state.models,
@@ -40,7 +45,7 @@ function renderModels(preferredModel = state.settings.model, preferredProvider =
     favorites: state.favorites,
     preferredModel,
     preferredProvider,
-    emptyLabel: 'Configure a provider in Settings'
+    emptyLabel: emptyModelLabel()
   });
   renderFavoriteButton();
   renderProviderSummary();

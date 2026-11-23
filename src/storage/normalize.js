@@ -24,7 +24,7 @@ export function normalizeProvider(value) {
   const id = String(provider.id || '').trim();
   if (!id) return null;
 
-  return {
+  const normalized = {
     id,
     name:
       String(provider.name || 'Untitled provider')
@@ -40,6 +40,10 @@ export function normalizeProvider(value) {
     createdAt: Number(provider.createdAt) || Date.now(),
     updatedAt: Number(provider.updatedAt) || Date.now()
   };
+  // `enabledModels` absent = legacy profile: every discovered model is offered.
+  // A stored array (even empty) is authoritative.
+  if (Array.isArray(provider.enabledModels)) normalized.enabledModels = uniqueTrimmed(provider.enabledModels);
+  return normalized;
 }
 
 export function normalizeProviders(values) {
@@ -57,10 +61,20 @@ export function isProviderReady(provider) {
   return Boolean(provider?.enabled && provider?.baseUrl && provider?.apiKey);
 }
 
-/** First ready provider and its first manual model (may be empty until discovery). */
+/**
+ * True when `modelId` may be offered for `provider`: manual models always, discovered
+ * models only when selected in `enabledModels` (legacy profiles without the field allow all).
+ */
+export function isModelSelectable(provider, modelId) {
+  if (!provider || !modelId) return false;
+  if (!Array.isArray(provider.enabledModels)) return true;
+  return (provider.manualModels || []).includes(modelId) || provider.enabledModels.includes(modelId);
+}
+
+/** First ready provider and its first manual (else selected) model; may be empty until discovery. */
 export function pickAutoSelectedModel(providers) {
   const provider = (providers || []).find(isProviderReady);
   return provider
-    ? { model: provider.manualModels[0] || '', modelProvider: provider.id }
+    ? { model: provider.manualModels[0] || provider.enabledModels?.[0] || '', modelProvider: provider.id }
     : { model: '', modelProvider: '' };
 }

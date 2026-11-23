@@ -5,7 +5,7 @@
 
 import { parseFavoriteModelKey, toFavoriteModelKey } from '../shared/model-keys.js';
 import { getFavoriteModels, getProviders, isProviderReady, loadSettingsWithSession } from '../storage/index.js';
-import { getAvailableModels } from './model-catalog.js';
+import { getAvailableModels, isModelSelectable } from './model-catalog.js';
 
 export async function resolveModel({ model, modelProvider } = {}) {
   const settings = await loadSettingsWithSession();
@@ -26,7 +26,10 @@ export async function resolveModel({ model, modelProvider } = {}) {
   return { provider, model: first.id };
 }
 
-/** Ordered, de-duplicated `{ provider, model }` candidates starting with `primary`. */
+/**
+ * Ordered, de-duplicated `{ provider, model }` candidates starting with `primary`.
+ * Favorites that are no longer selectable for their provider are skipped.
+ */
 export async function fallbackCandidates(primary) {
   const providers = new Map((await getProviders()).filter(isProviderReady).map((provider) => [provider.id, provider]));
   const catalog = await getAvailableModels();
@@ -44,7 +47,9 @@ export async function fallbackCandidates(primary) {
   add(primary.provider.id, primary.model);
   for (const key of await getFavoriteModels()) {
     const favorite = parseFavoriteModelKey(key);
-    if (favorite) add(favorite.providerId, favorite.model);
+    if (favorite && isModelSelectable(providers.get(favorite.providerId), favorite.model)) {
+      add(favorite.providerId, favorite.model);
+    }
   }
   for (const model of catalog.models) add(model.provider, model.id);
   return candidates;

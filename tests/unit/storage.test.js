@@ -176,3 +176,47 @@ describe('history and instructions', () => {
     await assert.rejects(storage.addInstruction('C', '  '), /text is required/);
   });
 });
+
+describe('provider model selection storage', () => {
+  test('normalizeProvider keeps enabledModels only when it is an array', () => {
+    assert.equal('enabledModels' in storage.normalizeProvider({ id: 'p' }), false);
+    assert.deepEqual(storage.normalizeProvider({ id: 'p', enabledModels: [' a ', 'a', '', 'b'] }).enabledModels, [
+      'a',
+      'b'
+    ]);
+    assert.deepEqual(storage.normalizeProvider({ id: 'p', enabledModels: [] }).enabledModels, []);
+  });
+
+  test('new providers default to an empty selection; explicit selection is stored', async () => {
+    const fresh = await storage.saveProvider({ name: 'x', baseUrl: 'https://x/v1', apiKey: 'k' });
+    assert.deepEqual(fresh.enabledModels, []);
+    const chosen = await storage.saveProvider({ id: fresh.id, enabledModels: ['b', 'b', 'a'] });
+    assert.deepEqual(chosen.enabledModels, ['b', 'a']);
+    const edited = await storage.saveProvider({ id: fresh.id, name: 'y' });
+    assert.deepEqual(edited.enabledModels, ['b', 'a']);
+  });
+
+  test('upgrade keeps legacy profiles without a selection (all models shown)', async () => {
+    resetChromeStorage(chrome, { local: { genericProviderMigrationVersion: 1, providers: [readyProvider('p1')] } });
+    await storage.initializeStorage();
+    assert.equal('enabledModels' in chrome.storage.local.data.providers[0], false);
+  });
+
+  test('deselecting the default model with no other model re-selects another provider', async () => {
+    resetChromeStorage(chrome, {
+      local: {
+        providers: [
+          readyProvider('p1', { manualModels: [], enabledModels: ['r1'] }),
+          readyProvider('p2', { manualModels: ['m2'] })
+        ],
+        modelProvider: 'p1',
+        model: 'r1',
+        favoriteModels: ['p1::r1']
+      }
+    });
+    await storage.saveProvider({ id: 'p1', enabledModels: [] });
+    assert.equal(chrome.storage.local.data.modelProvider, 'p2');
+    assert.equal(chrome.storage.local.data.model, 'm2');
+    assert.deepEqual(chrome.storage.local.data.favoriteModels, []);
+  });
+});
