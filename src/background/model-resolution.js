@@ -26,7 +26,7 @@ export async function resolveModel({ model, modelProvider } = {}) {
   const first = available.models.find((item) => item.provider === provider.id);
   if (!first) {
     throw new Error(
-      `No model is available for ${provider.name}. Tick models for it under Providers in Settings, or add a manual model.`
+      `No model is available for ${provider.name}. Check its models under Providers in Settings and tick the ones to use, or add a manual model.`
     );
   }
   return { provider, model: first.id };

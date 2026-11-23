@@ -304,7 +304,7 @@ describe('provider model selection', () => {
     seedSelection({ manualModels: [], enabledModels: [] }, { model: '' });
     const response = await dispatchMessage({ type: 'TRANSLATE_TEXT', payload: { text: 'Hello' } });
     assert.equal(response.ok, false);
-    assert.match(response.error, /Tick models/);
+    assert.match(response.error, /tick the ones to use/);
     assert.doesNotMatch(response.error, /Refresh its models/);
   });
 
