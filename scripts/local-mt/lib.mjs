@@ -155,3 +155,25 @@ export function chatCompletion(model, content, usage) {
     usage
   };
 }
+
+const SAFE_ASSET_NAME = /^[\w.-]+$/;
+
+/**
+ * Picks the first release with a Windows x64 llama.cpp CUDA build and its cudart runtime for one CUDA major
+ * version. Uses plain string checks (no regex built from a command-line value) and accepts only asset names that
+ * are safe to use as file names.
+ */
+export function pickCudaRelease(releases, cudaMajor) {
+  const major = String(cudaMajor);
+  if (!/^\d+$/.test(major)) throw new Error(`Invalid --cuda value: ${major}`);
+  const marker = `-win-cuda-${major}.`;
+  const matches = (name) =>
+    typeof name === 'string' && SAFE_ASSET_NAME.test(name) && name.includes(marker) && name.endsWith('-x64.zip');
+  for (const release of releases) {
+    const assets = Array.isArray(release?.assets) ? release.assets : [];
+    const bin = assets.find(({ name }) => matches(name) && name.startsWith('llama-') && name.includes('-bin-'));
+    const runtime = assets.find(({ name }) => matches(name) && name.startsWith('cudart-'));
+    if (bin && runtime) return { tag: release.tag_name, bin, runtime };
+  }
+  return null;
+}

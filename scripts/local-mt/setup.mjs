@@ -8,11 +8,12 @@
  * pass --skip-llama.
  */
 
-import { createWriteStream, existsSync, mkdirSync, readdirSync, renameSync, rmSync, writeFileSync } from 'node:fs';
+import { createWriteStream, existsSync, mkdirSync, readdirSync, renameSync, rmSync } from 'node:fs';
 import path from 'node:path';
 import { Readable } from 'node:stream';
 import { pipeline } from 'node:stream/promises';
 import { execFileSync } from 'node:child_process';
+import { pickCudaRelease } from './lib.mjs';
 import { DEFAULT_QUANT, LOCAL_MT_DIR, LLAMA_DIR, MODELS_DIR, MODEL_REPO, modelFile } from './paths.mjs';
 
 const args = process.argv.slice(2);
@@ -81,12 +82,8 @@ async function findRelease() {
   }
   const data = await response.json();
   const releases = Array.isArray(data) ? data : [data];
-  const cudaRe = new RegExp(`win-cuda-${cudaMajor}\\.[0-9.]+-x64\\.zip$`);
-  for (const release of releases) {
-    const bin = release.assets.find((asset) => /^llama-.*-bin-/.test(asset.name) && cudaRe.test(asset.name));
-    const runtime = release.assets.find((asset) => /^cudart-/.test(asset.name) && cudaRe.test(asset.name));
-    if (bin && runtime) return { tag: release.tag_name, bin, runtime };
-  }
+  const found = pickCudaRelease(releases, cudaMajor);
+  if (found) return found;
   throw new Error(`No llama.cpp release with Windows CUDA ${cudaMajor} x64 assets found.`);
 }
 
@@ -127,7 +124,6 @@ async function setupLlama() {
   rmSync(LLAMA_DIR, { recursive: true, force: true });
   renameSync(root, LLAMA_DIR);
   rmSync(staging, { recursive: true, force: true });
-  writeFileSync(path.join(LLAMA_DIR, 'VERSION'), `${release.tag}\n`);
   rmSync(downloads, { recursive: true, force: true });
   console.log(`installed llama.cpp ${release.tag} → .local-mt/llama/`);
 }

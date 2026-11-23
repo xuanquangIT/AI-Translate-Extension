@@ -8,6 +8,7 @@ import {
   cleanModelOutput,
   mapWithConcurrency,
   parseEnvelope,
+  pickCudaRelease,
   segmentMaxTokens,
   translateEnvelope
 } from '../../scripts/local-mt/lib.mjs';
@@ -286,4 +287,32 @@ test('parseArgs reads flags, then environment, then defaults', () => {
     concurrency: 8,
     model: 'gemma-4-e2b-q4_k_m'
   });
+});
+
+test('pickCudaRelease picks the matching CUDA build and rejects unsafe input', () => {
+  const asset = (name) => ({ name, browser_download_url: `https://example.test/${name}` });
+  const releases = [
+    {
+      tag_name: 'b2',
+      assets: [asset('llama-b2-bin-win-cuda-12.4-x64.zip'), asset('cudart-llama-bin-win-cuda-12.4-x64.zip')]
+    },
+    {
+      tag_name: 'b1',
+      assets: [
+        asset('llama-b1-bin-win-cpu-x64.zip'),
+        asset('llama-b1-bin-win-cuda-13.5-x64.zip'),
+        asset('cudart-llama-bin-win-cuda-13.5-x64.zip')
+      ]
+    }
+  ];
+  const found = pickCudaRelease(releases, '13');
+  assert.equal(found.tag, 'b1');
+  assert.equal(found.bin.name, 'llama-b1-bin-win-cuda-13.5-x64.zip');
+  assert.equal(found.runtime.name, 'cudart-llama-bin-win-cuda-13.5-x64.zip');
+  assert.equal(pickCudaRelease(releases, '11'), null);
+  assert.throws(() => pickCudaRelease(releases, '1.*'), /Invalid --cuda/);
+  const traversal = [
+    { tag_name: 'x', assets: [asset('../llama-x-bin-win-cuda-13.0-x64.zip'), asset('cudart-x-win-cuda-13.0-x64.zip')] }
+  ];
+  assert.equal(pickCudaRelease(traversal, '13'), null);
 });

@@ -114,6 +114,16 @@ function expectedFiles() {
   return expected;
 }
 
+// Read in one step (no exists-then-read race); a missing file is null.
+function readIfExists(file) {
+  try {
+    return normalizeEol(readFileSync(file, 'utf8'));
+  } catch (error) {
+    if (error.code === 'ENOENT') return null;
+    throw error;
+  }
+}
+
 const expected = expectedFiles();
 if (problems.length) {
   // Invalid sources: report them and touch nothing, so a typo never deletes a valid mirror.
@@ -123,7 +133,7 @@ if (problems.length) {
 const existing = [...walk(TARGET_SKILLS), ...walk(TARGET_AGENTS)];
 
 for (const [target, content] of expected) {
-  const current = existsSync(target) ? normalizeEol(readFileSync(target, 'utf8')) : null;
+  const current = readIfExists(target);
   if (current === content) continue;
   if (check) {
     problems.push(`${toPosix(relative(root, target))}: ${current === null ? 'missing' : 'out of date'}`);
