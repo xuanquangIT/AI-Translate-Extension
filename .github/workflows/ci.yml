@@ -16,14 +16,16 @@ concurrency:
 
 jobs:
   verify:
-    name: Node ${{ matrix.node }}
+    # Job names are required status checks in the main ruleset (.github/rulesets/main.json); rename both together.
+    name: Verify (Node ${{ matrix.node }})
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     strategy:
       fail-fast: false
       matrix:
         node:
-          - 18
           - 22
+          - 24
     steps:
       - name: Check out repository
         uses: actions/checkout@v7
@@ -34,12 +36,9 @@ jobs:
           cache: npm
       - name: Install dependencies
         run: npm ci
-      - name: Check JavaScript syntax
-        run: npm run check:syntax
-      - name: Run credential-free tests
-        run: npm test
-      - name: Build extension
-        run: npm run build
+      # syntax, extension validation, lint, format, unit + contract tests, agent-config drift, build
+      - name: Verify
+        run: npm run verify
       - name: Upload unpacked build
         if: matrix.node == 22
         uses: actions/upload-artifact@v7

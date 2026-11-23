@@ -51,12 +51,12 @@ LingoFlux excludes password and form fields, code and preformatted blocks, hidde
 
 ## Browser permissions
 
-| Permission | Why LingoFlux uses it |
-| --- | --- |
-| `storage` | Save provider profiles, credentials, settings, prompts, history, and short-lived caches in the browser profile. |
-| `activeTab` | Act on the tab where the user explicitly starts a popup or context-menu translation. |
-| `scripting` | Reinject the packaged content script when needed for a user-requested context-menu action. No remote script is downloaded or executed. |
-| `contextMenus` | Add the user-invoked **Translate selection** context-menu command. |
+| Permission               | Why LingoFlux uses it                                                                                                                                                                |
+| ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `storage`                | Save provider profiles, credentials, settings, prompts, history, and short-lived caches in the browser profile.                                                                      |
+| `activeTab`              | Act on the tab where the user explicitly starts a popup or context-menu translation.                                                                                                 |
+| `scripting`              | Reinject the packaged content script when needed for a user-requested context-menu action. No remote script is downloaded or executed.                                               |
+| `contextMenus`           | Add the user-invoked **Translate selection** context-menu command.                                                                                                                   |
 | `<all_urls>` host access | Support selection and page translation on ordinary webpages and connect to user-configured provider API hosts. It is not used on browser-internal pages where extensions cannot run. |
 
 The package contains all executable extension code. Provider responses are treated as data and are not executed as JavaScript.

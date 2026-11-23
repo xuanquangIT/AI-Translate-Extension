@@ -25,19 +25,39 @@
     "browser-extension"
   ],
   "scripts": {
-    "build": "node scripts/build.js",
-    "build:zip": "node scripts/build.js --zip",
-    "clean": "node scripts/clean.js",
+    "build": "node scripts/build.mjs",
+    "build:zip": "node scripts/build.mjs --zip",
+    "clean": "node scripts/clean.mjs",
     "check:syntax": "node --no-warnings --experimental-vm-modules scripts/check-syntax.mjs",
-    "test": "node scripts/test-core.mjs",
-    "verify": "npm run check:syntax && npm test && npm run build",
-    "test:live": "node scripts/smoke.js",
-    "dev": "echo Load src/ folder as unpacked extension in browser"
+    "check:extension": "node scripts/validate-extension.mjs",
+    "check:agents": "node scripts/sync-agent-config.mjs --check",
+    "sync:agents": "node scripts/sync-agent-config.mjs",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "test": "node --test \"tests/**/*.test.js\"",
+    "test:unit": "node --test \"tests/unit/**/*.test.js\"",
+    "test:contract": "node --test \"tests/contract/**/*.test.js\"",
+    "test:coverage": "node --test --experimental-test-coverage \"tests/**/*.test.js\"",
+    "test:live": "node scripts/smoke-live.mjs",
+    "local-mt:setup": "node scripts/local-mt/setup.mjs",
+    "local-mt:start": "node scripts/local-mt/start.mjs",
+    "local-mt:tray": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/local-mt/tray.ps1",
+    "local-mt:shortcut": "node scripts/local-mt/shortcut.mjs",
+    "local-mt:bench": "node scripts/local-mt/bench.mjs",
+    "verify": "npm run check:syntax && npm run check:extension && npm run lint && npm run format:check && npm test && npm run check:agents && npm run build",
+    "dev": "echo Load src/ as an unpacked extension, then reload it after each change."
   },
   "devDependencies": {
-    "archiver": "^8.0.0"
+    "@eslint/js": "^9.39.5",
+    "archiver": "^8.0.0",
+    "eslint": "^9.39.5",
+    "globals": "^17.14.0",
+    "prettier": "^3.10.1"
   },
   "engines": {
-    "node": ">=18.0.0"
-  }
+    "node": ">=22.0.0"
+  },
+  "type": "module"
 }

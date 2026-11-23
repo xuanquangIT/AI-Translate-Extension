@@ -59,19 +59,19 @@ The archive is for unpacked installation until official browser-store listings a
 
 ## Trust and privacy at a glance
 
-| Question | Answer |
-| --- | --- |
-| Does LingoFlux operate a translation server? | No. Requests go directly from the extension to the provider endpoint you configure. |
-| Is there telemetry or advertising? | No developer-controlled analytics, telemetry, advertising, or tracking is present. |
-| Where are credentials stored? | In `chrome.storage.local` in the current browser profile. Browser local storage is not a password vault; use a scoped provider key. |
-| What leaves the browser? | When you request a translation or model refresh, the relevant text, prompt/settings, model request, and provider credential are sent to the configured endpoint. |
-| Why does it request access to webpages? | To read user-selected or requested page text and insert the translation. LingoFlux does not translate in the background without a user action. |
+| Question                                     | Answer                                                                                                                                                           |
+| -------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Does LingoFlux operate a translation server? | No. Requests go directly from the extension to the provider endpoint you configure.                                                                              |
+| Is there telemetry or advertising?           | No developer-controlled analytics, telemetry, advertising, or tracking is present.                                                                               |
+| Where are credentials stored?                | In `chrome.storage.local` in the current browser profile. Browser local storage is not a password vault; use a scoped provider key.                              |
+| What leaves the browser?                     | When you request a translation or model refresh, the relevant text, prompt/settings, model request, and provider credential are sent to the configured endpoint. |
+| Why does it request access to webpages?      | To read user-selected or requested page text and insert the translation. LingoFlux does not translate in the background without a user action.                   |
 
 Read the full [privacy policy](PRIVACY.md), [security policy](SECURITY.md), and [runtime architecture](docs/ARCHITECTURE.md) before using the extension with sensitive content.
 
 ## Install from source
 
-Prerequisites: Node.js 18 or newer and npm.
+Prerequisites: Node.js 22 or newer and npm.
 
 ```bash
 git clone https://github.com/xuanquangIT/AI-Translate-Extension.git
@@ -93,10 +93,10 @@ For active development, you may load `src` directly and reload the extension aft
 
 Open **Settings**, then create a provider profile:
 
-| Compatibility | Typical base URL | Translation endpoint |
-| --- | --- | --- |
-| OpenAI-compatible | `https://api.example.com/v1` | `/chat/completions` |
-| Anthropic-compatible | `https://api.example.com/v1` | `/messages` |
+| Compatibility        | Typical base URL             | Translation endpoint |
+| -------------------- | ---------------------------- | -------------------- |
+| OpenAI-compatible    | `https://api.example.com/v1` | `/chat/completions`  |
+| Anthropic-compatible | `https://api.example.com/v1` | `/messages`          |
 
 Add a scoped API key and either refresh the model catalog or enter manual model IDs. Provider compatibility varies; LingoFlux expects the request and response contracts documented in [Runtime Contracts](docs/CONTRACTS.md).
 
@@ -121,12 +121,12 @@ The persistent custom system prompt supports `{{sourceLanguage}}` and `{{targetL
 
 ## Browser support
 
-| Browser | Project status |
-| --- | --- |
-| Google Chrome 110+ | Primary release target |
-| Microsoft Edge 110+ | Primary release target |
+| Browser                 | Project status                                                    |
+| ----------------------- | ----------------------------------------------------------------- |
+| Google Chrome 110+      | Primary release target                                            |
+| Microsoft Edge 110+     | Primary release target                                            |
 | Other Chromium browsers | Expected to work, but not part of the current release test matrix |
-| Firefox | Not packaged or tested; no support claim is made |
+| Firefox                 | Not packaged or tested; no support claim is made                  |
 
 See the [technical test matrix](docs/TESTING.md) for the browser paths that require manual verification.
 
@@ -134,35 +134,40 @@ See the [technical test matrix](docs/TESTING.md) for the browser paths that requ
 
 ```bash
 npm ci             # reproducible dependency install
-npm run check:syntax # parse all extension JavaScript entry points
-npm test           # credential-free core regression checks
-npm run build      # generate dist/
-npm run verify     # run tests and build
+npm test           # credential-free unit + contract tests
+npm run lint       # ESLint (npm run lint:fix and npm run format to auto-fix)
+npm run verify     # syntax, extension validation, lint, format, tests, agent-config drift, build
 npm run build:zip  # create the store/release ZIP
 ```
 
-`npm run test:live` sends requests to Gemini and consumes a configured test key. Run it only with an authorized `GEMINI_API_KEY`; it is not part of CI.
+`npm run test:live` sends real requests to the provider configured by the `LIVE_*` variables in `.env` (see
+`.env.example`) and consumes that key's quota. Run it only with a key you own; it is not part of CI.
 
 ### Project layout
 
 ```text
 src/
-  manifest.json          Manifest V3 metadata, permissions, and entry points
-  scripts/background.js  Service worker, message routing, provider fallback
-  scripts/content.js     Selection and webpage DOM behavior
-  scripts/lib/           Provider, storage, configuration, and parsing modules
-  pages/popup/            Main translation interface
-  pages/options/          Provider and default settings
-  _locales/               Manifest localization
-scripts/                  Build and credential-free test tooling
-docs/                     Architecture, contracts, development, and testing guidance
-.github/                  CI, release automation, and contribution templates
+  manifest.json      Manifest V3 metadata, permissions, and entry points
+  shared/            Pure constants and helpers (config, languages, message registry, text)
+  providers/         OpenAI- and Anthropic-compatible HTTP adapters
+  translation/       Translation-only prompt policy and strict response parsing
+  storage/           Settings, providers, favorites, instructions, history, migrations
+  background/        Service worker: router, translation service, model catalog, tab jobs
+  content/           Classic content script: selection and webpage DOM behavior
+  pages/             Popup, options, and shared page helpers
+  _locales/          Manifest localization
+tests/               Unit and contract tests (node:test, chrome/fetch mocks)
+scripts/             Build, validation, live smoke test, agent-config sync
+docs/                Architecture map, contracts, playbook, testing, git and agent workflow, ADRs
+.agents/             Canonical AI-agent rules, skills, and roles (mirrored to .claude/)
+.github/             CI, CodeQL, release automation, and contribution templates
 ```
 
 Contributor documentation:
 
 - [Contributing guide](CONTRIBUTING.md)
-- [Development guide](docs/DEVELOPMENT_GUIDE.md)
+- [AI agent guide](AGENTS.md) and [agent workflow](docs/AGENT_WORKFLOW.md)
+- [Git workflow](docs/GIT_WORKFLOW.md)
 - [Architecture](docs/ARCHITECTURE.md)
 - [Runtime contracts](docs/CONTRACTS.md)
 - [Feature playbook](docs/FEATURE_PLAYBOOK.md)

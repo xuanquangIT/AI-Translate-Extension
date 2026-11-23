@@ -1,0 +1,11 @@
+# Normalize text to LF in the repository; Windows checkouts stay consistent with Prettier.
+* text=auto eol=lf
+
+*.png binary
+*.jpg binary
+*.ico binary
+*.zip binary
+
+package-lock.json linguist-generated=true -diff
+.claude/skills/** linguist-generated=true
+.claude/agents/** linguist-generated=true

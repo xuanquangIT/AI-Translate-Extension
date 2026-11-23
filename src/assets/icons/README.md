@@ -3,6 +3,7 @@
 This folder contains the extension icons.
 
 Required icon sizes:
+
 - icon16.png (16x16) - Toolbar/tab icon
 - icon32.png (32x32) - Windows shortcut
 - icon48.png (48x48) - Extensions page

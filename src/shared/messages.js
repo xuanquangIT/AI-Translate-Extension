@@ -1,0 +1,46 @@
+/**
+ * Runtime message type registry. Every message in the extension is listed here.
+ *
+ * The content script is a classic script and cannot import this module, so it
+ * repeats the CONTENT_MESSAGES strings literally. `tests/contract/` enforces that
+ * both sides stay in sync. Response envelope: `{ ok: true, ... }` or `{ ok: false, error }`.
+ */
+
+/** Messages handled by the background service worker (`src/background/router.js`). */
+export const BACKGROUND_MESSAGES = Object.freeze({
+  GET_SETTINGS: 'GET_SETTINGS',
+  SAVE_SETTINGS: 'SAVE_SETTINGS',
+  SAVE_DEFAULT_SETTINGS: 'SAVE_DEFAULT_SETTINGS',
+  GET_PROVIDERS: 'GET_PROVIDERS',
+  SAVE_PROVIDER: 'SAVE_PROVIDER',
+  REMOVE_PROVIDER: 'REMOVE_PROVIDER',
+  GET_AVAILABLE_MODELS: 'GET_AVAILABLE_MODELS',
+  REFRESH_PROVIDER_MODELS: 'REFRESH_PROVIDER_MODELS',
+  TOGGLE_FAVORITE_MODEL: 'TOGGLE_FAVORITE_MODEL',
+  GET_INSTRUCTIONS: 'GET_INSTRUCTIONS',
+  ADD_INSTRUCTION: 'ADD_INSTRUCTION',
+  UPDATE_INSTRUCTION: 'UPDATE_INSTRUCTION',
+  REMOVE_INSTRUCTION: 'REMOVE_INSTRUCTION',
+  TOGGLE_INSTRUCTION: 'TOGGLE_INSTRUCTION',
+  TRANSLATE_TEXT: 'TRANSLATE_TEXT',
+  TRANSLATE_PAGE: 'TRANSLATE_PAGE',
+  TRANSLATE_SELECTION_IN_TAB: 'TRANSLATE_SELECTION_IN_TAB',
+  TRANSLATE_PAGE_IN_TAB: 'TRANSLATE_PAGE_IN_TAB',
+  RESTORE_PAGE_IN_TAB: 'RESTORE_PAGE_IN_TAB',
+  GET_HISTORY: 'GET_HISTORY',
+  CLEAR_HISTORY: 'CLEAR_HISTORY'
+});
+
+/** Messages handled by the content script (`src/content/content.js`). */
+export const CONTENT_MESSAGES = Object.freeze({
+  SET_SELECTION_ENABLED: 'SET_SELECTION_ENABLED',
+  SET_DISPLAY_MODE: 'SET_DISPLAY_MODE',
+  SHOW_TOAST: 'SHOW_TOAST',
+  GET_SELECTION: 'GET_SELECTION',
+  INSERT_TRANSLATION: 'INSERT_TRANSLATION',
+  TRANSLATE_PAGE_START: 'TRANSLATE_PAGE_START',
+  TRANSLATE_PAGE_RESTORE: 'TRANSLATE_PAGE_RESTORE'
+});
+
+export const CONTEXT_MENU_ID = 'lingoflux-translate';
+export const CONTENT_SCRIPT_FILE = 'content/content.js';

@@ -1,96 +1,309 @@
-const languages = [['auto', 'Auto detect'], ['en', 'English'], ['vi', 'Vietnamese'], ['ja', 'Japanese'], ['ko', 'Korean'], ['zh', 'Chinese'], ['fr', 'French'], ['es', 'Spanish'], ['de', 'German'], ['ru', 'Russian'], ['pt', 'Portuguese'], ['it', 'Italian'], ['ar', 'Arabic'], ['hi', 'Hindi'], ['th', 'Thai'], ['id', 'Indonesian'], ['nl', 'Dutch'], ['pl', 'Polish'], ['tr', 'Turkish'], ['uk', 'Ukrainian']];
-const $ = (id) => document.getElementById(id);
+/**
+ * Popup: quick translation, session-scoped language/model choice, history.
+ * Long-running tab jobs run in the service worker so the popup may close.
+ */
+
+import { BACKGROUND_MESSAGES as M } from '../../shared/messages.js';
+import { $, fillLanguageSelects, setBusy, setStatus as renderStatus, textElement } from '../shared/dom.js';
+import { isFavoriteSelection, renderModelOptions, selectedModel } from '../shared/model-picker.js';
+import { broadcastDisplayMode, broadcastSelectionEnabled, request } from '../shared/runtime.js';
+
+const PROMPT_SAVE_DEBOUNCE_MS = 500;
 const state = { settings: {}, providers: [], models: [], favorites: [], errors: {} };
 let promptSaveTimer;
 
-function setStatus(text = '', error = false) { const el = $('status'); el.textContent = text; el.className = `status${error ? ' error' : ''}`; }
-function addOption(parent, value, label) { const option = document.createElement('option'); option.value = value; option.textContent = label; parent.appendChild(option); return option; }
-function selectedModel() { const option = $('model').selectedOptions[0]; return { model: option?.value || '', modelProvider: option?.dataset.provider || '' }; }
-function keyOf(model, provider) { return model && provider ? `${provider}::${model}` : ''; }
+const setStatus = (text, isError = false) => renderStatus($('status'), text, isError);
+const currentModel = () => selectedModel($('model'));
 
-function fillLanguages() { languages.forEach(([code, label]) => addOption($('fromLang'), code, label)); languages.filter(([code]) => code !== 'auto').forEach(([code, label]) => addOption($('toLang'), code, label)); }
+// ---------------------------------------------------------------- rendering
+
+function renderProviderSummary() {
+  const selected = currentModel();
+  const provider = state.providers.find((item) => item.id === selected.modelProvider);
+  $('providerSummary').textContent = provider
+    ? `${provider.name} · ${selected.model || 'choose a model'}`
+    : 'Set up a provider to begin';
+}
+
+function renderFavoriteButton() {
+  const button = $('btnFavorite');
+  const favorite = isFavoriteSelection($('model'), state.favorites);
+  button.disabled = !currentModel().model;
+  button.textContent = favorite ? '★' : '☆';
+  button.title = favorite ? 'Remove favorite' : 'Add favorite';
+}
 
 function renderModels(preferredModel = state.settings.model, preferredProvider = state.settings.modelProvider) {
-  const select = $('model'); select.replaceChildren(); const favoriteSet = new Set(state.favorites);
-  const favorites = state.models.filter((item) => item.isFavorite);
-  if (favorites.length) { const group = document.createElement('optgroup'); group.label = 'Favorites'; favorites.forEach((item) => addModel(group, item, true)); select.appendChild(group); }
-  for (const provider of state.providers) {
-    const models = state.models.filter((item) => item.provider === provider.id && !favoriteSet.has(keyOf(item.id, item.provider)));
-    if (!models.length) continue;
-    const group = document.createElement('optgroup'); group.label = provider.name; models.forEach((item) => addModel(group, item)); select.appendChild(group);
-  }
-  if (!select.options.length) addOption(select, '', 'Configure a provider in Settings').disabled = true;
-  const chosen = [...select.options].find((item) => item.value === preferredModel && item.dataset.provider === preferredProvider) || [...select.options].find((item) => item.value === preferredModel) || [...select.options].find((item) => !item.disabled);
-  if (chosen) chosen.selected = true;
-  updateFavorite();
-  const selected = selectedModel(); const provider = state.providers.find((item) => item.id === selected.modelProvider);
-  $('providerSummary').textContent = provider ? `${provider.name} · ${selected.model || 'choose a model'}` : 'Set up a provider to begin';
+  renderModelOptions($('model'), {
+    models: state.models,
+    providers: state.providers,
+    favorites: state.favorites,
+    preferredModel,
+    preferredProvider,
+    emptyLabel: 'Configure a provider in Settings'
+  });
+  renderFavoriteButton();
+  renderProviderSummary();
 }
 
-function addModel(group, item, favorite = false) { const option = addOption(group, item.id, `${favorite ? '★ ' : ''}${item.label}${item.tier === 'manual' ? ' · manual' : ''}`); option.dataset.provider = item.provider; option.title = item.id; }
-function updateFavorite() { const selected = selectedModel(); const favorite = state.favorites.includes(keyOf(selected.model, selected.modelProvider)); $('btnFavorite').disabled = !selected.model; $('btnFavorite').textContent = favorite ? '★' : '☆'; $('btnFavorite').title = favorite ? 'Remove favorite' : 'Add favorite'; }
-function updatePlacement(mode) { document.querySelectorAll('.mode-button').forEach((button) => button.classList.toggle('active', button.dataset.mode === mode)); }
+function renderPlacement(mode) {
+  document.querySelectorAll('.mode-button').forEach((button) => {
+    button.classList.toggle('active', button.dataset.mode === mode);
+  });
+}
+
+async function renderHistory() {
+  const response = await chrome.runtime.sendMessage({ type: M.GET_HISTORY });
+  const list = $('historyList');
+  list.replaceChildren();
+  for (const item of response?.history || []) {
+    const row = document.createElement('div');
+    row.className = 'history-item';
+    row.append(
+      textElement('div', 'history-source', item.sourceText),
+      textElement('div', 'history-result', item.translation)
+    );
+    list.appendChild(row);
+  }
+  if (!list.children.length) list.appendChild(textElement('p', 'status', 'No recent translations.'));
+}
+
+// ---------------------------------------------------------------- state sync
 
 async function loadModels(force = false, preferred = {}) {
-  const response = await chrome.runtime.sendMessage({ type: force ? 'REFRESH_PROVIDER_MODELS' : 'GET_AVAILABLE_MODELS', payload: force ? {} : undefined });
-  if (!response?.ok) throw new Error(response?.error || 'Unable to load model catalog.');
-  state.models = response.models || []; state.favorites = response.favoriteModels || []; state.errors = response.errors || {}; state.providers = response.providers || state.providers;
+  const response = await request(
+    force ? M.REFRESH_PROVIDER_MODELS : M.GET_AVAILABLE_MODELS,
+    force ? {} : undefined,
+    'Unable to load model catalog.'
+  );
+  state.models = response.models || [];
+  state.favorites = response.favoriteModels || [];
+  state.errors = response.errors || {};
+  state.providers = response.providers || state.providers;
   renderModels(preferred.model, preferred.modelProvider);
-  const error = Object.values(state.errors).filter(Boolean)[0]; if (error) setStatus(error, true);
+  const error = Object.values(state.errors).find(Boolean);
+  if (error) setStatus(error, true);
 }
 
-async function saveSession() { const selected = selectedModel(); await chrome.runtime.sendMessage({ type: 'SAVE_SETTINGS', payload: { ...selected, fromLang: $('fromLang').value, toLang: $('toLang').value } }); }
+async function saveSession() {
+  await chrome.runtime.sendMessage({
+    type: M.SAVE_SETTINGS,
+    payload: { ...currentModel(), fromLang: $('fromLang').value, toLang: $('toLang').value }
+  });
+}
+
 async function saveSystemPrompt({ announce = false } = {}) {
   clearTimeout(promptSaveTimer);
   promptSaveTimer = undefined;
   const systemPrompt = $('systemPrompt').value.trim();
-  const response = await chrome.runtime.sendMessage({ type: 'SAVE_DEFAULT_SETTINGS', payload: { systemPrompt } });
-  if (!response?.ok) throw new Error(response?.error || 'Unable to save the system prompt.');
+  await request(M.SAVE_DEFAULT_SETTINGS, { systemPrompt }, 'Unable to save the system prompt.');
   state.settings.systemPrompt = systemPrompt;
   if (announce) setStatus('Custom system prompt saved.');
 }
+
 function scheduleSystemPromptSave() {
   clearTimeout(promptSaveTimer);
-  promptSaveTimer = setTimeout(() => saveSystemPrompt().catch((error) => setStatus(error.message, true)), 500);
+  promptSaveTimer = setTimeout(
+    () => saveSystemPrompt().catch((error) => setStatus(error.message, true)),
+    PROMPT_SAVE_DEBOUNCE_MS
+  );
 }
-async function ensureSystemPromptSaved() { await saveSystemPrompt(); }
-function translationPayload() { return { ...selectedModel(), fromLang: $('fromLang').value, toLang: $('toLang').value }; }
-function setBusy(button, busy, label) { button.disabled = busy; if (!button.dataset.label) button.dataset.label = button.textContent; button.textContent = busy ? label : button.dataset.label; }
 
-async function activeTabId() { const [tab] = await chrome.tabs.query({ active: true, currentWindow: true }); if (!tab?.id) throw new Error('No active tab is available.'); return tab.id; }
+function translationPayload() {
+  return { ...currentModel(), fromLang: $('fromLang').value, toLang: $('toLang').value };
+}
+
+async function activeTabId() {
+  const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+  if (!tab?.id) throw new Error('No active tab is available.');
+  return tab.id;
+}
+
+// ---------------------------------------------------------------- actions
+
+/** Runs a translation action with busy state; always saves a pending prompt edit first. */
+async function runAction(button, busyLabel, startMessage, action) {
+  setBusy(button, true, busyLabel);
+  setStatus(startMessage);
+  try {
+    await saveSystemPrompt();
+    setStatus(await action());
+  } catch (error) {
+    setStatus(error.message, true);
+  } finally {
+    setBusy(button, false);
+  }
+}
 
 async function translateDirect() {
-  const text = $('directInput').value.trim(); if (!text) return setStatus('Enter text to translate.', true);
-  const button = $('btnDirectTranslate'); setBusy(button, true, 'Translating…'); $('directOutput').hidden = true; setStatus('');
-  try { await ensureSystemPromptSaved(); const result = await chrome.runtime.sendMessage({ type: 'TRANSLATE_TEXT', payload: { ...translationPayload(), text } }); if (!result?.ok) throw new Error(result?.error || 'Translation failed.'); $('directOutputText').textContent = result.translation; $('directOutput').hidden = false; setStatus('Translation complete.'); } catch (error) { setStatus(error.message, true); } finally { setBusy(button, false); }
+  const text = $('directInput').value.trim();
+  if (!text) return setStatus('Enter text to translate.', true);
+  $('directOutput').hidden = true;
+  return runAction($('btnDirectTranslate'), 'Translating…', '', async () => {
+    const result = await request(M.TRANSLATE_TEXT, { ...translationPayload(), text }, 'Translation failed.');
+    $('directOutputText').textContent = result.translation;
+    $('directOutput').hidden = false;
+    return 'Translation complete.';
+  });
 }
 
-async function translateSelection() {
-  const button = $('btnSelection'); setBusy(button, true, 'Working…'); setStatus('Translation will continue even if this popup closes.');
-  try { await ensureSystemPromptSaved(); const result = await chrome.runtime.sendMessage({ type: 'TRANSLATE_SELECTION_IN_TAB', payload: { ...translationPayload(), tabId: await activeTabId() } }); if (!result?.ok) throw new Error(result?.error || 'Translation failed.'); setStatus('Translation inserted into the page.'); } catch (error) { setStatus(error.message, true); } finally { setBusy(button, false); }
+function translateSelection() {
+  return runAction($('btnSelection'), 'Working…', 'Translation will continue even if this popup closes.', async () => {
+    await request(
+      M.TRANSLATE_SELECTION_IN_TAB,
+      { ...translationPayload(), tabId: await activeTabId() },
+      'Translation failed.'
+    );
+    return 'Translation inserted into the page.';
+  });
 }
 
-async function translatePage() {
-  const button = $('btnTranslatePage'); setBusy(button, true, 'Translating…'); setStatus('Page translation will continue even if this popup closes.');
-  try { await ensureSystemPromptSaved(); const result = await chrome.runtime.sendMessage({ type: 'TRANSLATE_PAGE_IN_TAB', payload: { ...translationPayload(), tabId: await activeTabId() } }); if (!result?.ok) throw new Error(result?.error || 'Page translation failed.'); setStatus(`Translated ${result.translatedCount} of ${result.segmentCount} segments.`); } catch (error) { setStatus(error.message, true); } finally { setBusy(button, false); }
+function translatePage() {
+  return runAction(
+    $('btnTranslatePage'),
+    'Translating…',
+    'Page translation will continue even if this popup closes.',
+    async () => {
+      await request(
+        M.TRANSLATE_PAGE_IN_TAB,
+        { ...translationPayload(), tabId: await activeTabId() },
+        'Page translation failed.'
+      );
+      return 'Translating visible text first; the rest is translated as you scroll.';
+    }
+  );
 }
 
-async function renderHistory() { const response = await chrome.runtime.sendMessage({ type: 'GET_HISTORY' }); const list = $('historyList'); list.replaceChildren(); for (const item of response?.history || []) { const row = document.createElement('div'); row.className = 'history-item'; const source = document.createElement('div'); source.className = 'history-source'; source.textContent = item.sourceText; const result = document.createElement('div'); result.className = 'history-result'; result.textContent = item.translation; row.append(source, result); list.appendChild(row); } if (!list.children.length) { const empty = document.createElement('p'); empty.className = 'status'; empty.textContent = 'No recent translations.'; list.appendChild(empty); } }
+async function restorePage() {
+  const button = $('btnRestorePage');
+  setBusy(button, true, 'Restoring…');
+  try {
+    const result = await request(M.RESTORE_PAGE_IN_TAB, { tabId: await activeTabId() }, 'Unable to restore the page.');
+    setStatus(result.restored ? 'Original page text restored.' : 'Nothing to restore on this page.');
+  } catch (error) {
+    setStatus(error.message, true);
+  } finally {
+    setBusy(button, false);
+  }
+}
+
+async function refreshModels() {
+  const button = $('btnRefreshModels');
+  setBusy(button, true, '…');
+  try {
+    await loadModels(true, currentModel());
+    setStatus('Model catalog refreshed.');
+  } catch (error) {
+    setStatus(error.message, true);
+  } finally {
+    setBusy(button, false);
+  }
+}
+
+async function toggleFavorite() {
+  const selected = currentModel();
+  const result = await chrome.runtime.sendMessage({ type: M.TOGGLE_FAVORITE_MODEL, payload: selected });
+  if (!result?.ok) return setStatus(result?.error || 'Unable to change favorite.', true);
+  state.favorites = result.favoriteModels || [];
+  return renderModels(selected.model, selected.modelProvider);
+}
+
+async function setSelectionEnabled(enabled) {
+  await request(M.SAVE_DEFAULT_SETTINGS, { enableSelection: enabled });
+  await broadcastSelectionEnabled(enabled);
+  setStatus(enabled ? 'Selection tools enabled.' : 'Selection tools disabled.');
+}
+
+async function setDisplayMode(mode) {
+  renderPlacement(mode);
+  await request(M.SAVE_DEFAULT_SETTINGS, { translationDisplayMode: mode });
+  await broadcastDisplayMode(mode);
+  setStatus(`${mode === 'replace' ? 'Replace' : 'Badge'} placement selected.`);
+}
+
+// ---------------------------------------------------------------- wiring
+
+function bindEvents() {
+  $('openOptions').addEventListener('click', () => chrome.runtime.openOptionsPage());
+  $('fromLang').addEventListener('change', saveSession);
+  $('toLang').addEventListener('change', saveSession);
+  $('model').addEventListener('change', () => {
+    renderFavoriteButton();
+    renderProviderSummary();
+    saveSession();
+  });
+  $('btnRefreshModels').addEventListener('click', refreshModels);
+  $('btnFavorite').addEventListener('click', toggleFavorite);
+
+  $('systemPrompt').addEventListener('input', scheduleSystemPromptSave);
+  $('btnSaveSystemPrompt').addEventListener('click', async () => {
+    const button = $('btnSaveSystemPrompt');
+    setBusy(button, true, 'Saving…');
+    try {
+      await saveSystemPrompt({ announce: true });
+    } catch (error) {
+      setStatus(error.message, true);
+    } finally {
+      setBusy(button, false);
+    }
+  });
+  window.addEventListener('blur', () => {
+    if (promptSaveTimer) saveSystemPrompt().catch(() => {});
+  });
+
+  $('btnDirectTranslate').addEventListener('click', translateDirect);
+  $('directInput').addEventListener('keydown', (event) => {
+    if ((event.ctrlKey || event.metaKey) && event.key === 'Enter') {
+      event.preventDefault();
+      translateDirect();
+    }
+  });
+  $('btnSelection').addEventListener('click', translateSelection);
+  $('btnTranslatePage').addEventListener('click', translatePage);
+  $('btnRestorePage').addEventListener('click', restorePage);
+  $('btnCopyDirect').addEventListener('click', () =>
+    navigator.clipboard
+      .writeText($('directOutputText').textContent)
+      .then(() => setStatus('Copied.'))
+      .catch(() => setStatus('Unable to copy.', true))
+  );
+
+  $('enableSelection').addEventListener('change', (event) =>
+    setSelectionEnabled(event.target.checked).catch((error) => setStatus(error.message, true))
+  );
+  document
+    .querySelectorAll('.mode-button')
+    .forEach((button) =>
+      button.addEventListener('click', () =>
+        setDisplayMode(button.dataset.mode).catch((error) => setStatus(error.message, true))
+      )
+    );
+
+  $('btnHistory').addEventListener('click', async () => {
+    const panel = $('historyPanel');
+    panel.hidden = !panel.hidden;
+    if (!panel.hidden) await renderHistory();
+  });
+  $('btnClearHistory').addEventListener('click', async () => {
+    await chrome.runtime.sendMessage({ type: M.CLEAR_HISTORY });
+    renderHistory();
+  });
+}
 
 async function init() {
-  fillLanguages(); const response = await chrome.runtime.sendMessage({ type: 'GET_SETTINGS' }); if (!response?.ok) throw new Error(response?.error || 'Unable to load settings.');
-  state.settings = response.settings || {}; $('fromLang').value = state.settings.fromLang || 'auto'; $('toLang').value = state.settings.toLang || 'vi'; $('systemPrompt').value = state.settings.systemPrompt || ''; $('enableSelection').checked = state.settings.enableSelection !== false; updatePlacement(state.settings.translationDisplayMode || 'badge');
-  const providers = await chrome.runtime.sendMessage({ type: 'GET_PROVIDERS' }); state.providers = providers?.providers || []; await loadModels(false);
+  fillLanguageSelects($('fromLang'), $('toLang'));
+  const response = await request(M.GET_SETTINGS, undefined, 'Unable to load settings.');
+  state.settings = response.settings || {};
+  $('fromLang').value = state.settings.fromLang || 'auto';
+  $('toLang').value = state.settings.toLang || 'vi';
+  $('systemPrompt').value = state.settings.systemPrompt || '';
+  $('enableSelection').checked = state.settings.enableSelection !== false;
+  renderPlacement(state.settings.translationDisplayMode || 'badge');
+
+  const providers = await chrome.runtime.sendMessage({ type: M.GET_PROVIDERS });
+  state.providers = providers?.providers || [];
+  await loadModels(false);
 }
 
-$('openOptions').addEventListener('click', () => chrome.runtime.openOptionsPage()); $('fromLang').addEventListener('change', saveSession); $('toLang').addEventListener('change', saveSession); $('model').addEventListener('change', () => { updateFavorite(); saveSession(); const selected = selectedModel(); const provider = state.providers.find((item) => item.id === selected.modelProvider); $('providerSummary').textContent = provider ? `${provider.name} · ${selected.model}` : ''; });
-$('btnRefreshModels').addEventListener('click', async () => { const button = $('btnRefreshModels'); setBusy(button, true, '…'); try { await loadModels(true, selectedModel()); setStatus('Model catalog refreshed.'); } catch (error) { setStatus(error.message, true); } finally { setBusy(button, false); } });
-$('btnFavorite').addEventListener('click', async () => { const selected = selectedModel(); const result = await chrome.runtime.sendMessage({ type: 'TOGGLE_FAVORITE_MODEL', payload: selected }); if (!result?.ok) return setStatus(result?.error || 'Unable to change favorite.', true); state.favorites = result.favoriteModels || []; renderModels(selected.model, selected.modelProvider); });
-$('systemPrompt').addEventListener('input', scheduleSystemPromptSave); $('btnSaveSystemPrompt').addEventListener('click', async () => { const button = $('btnSaveSystemPrompt'); setBusy(button, true, 'Saving…'); try { await saveSystemPrompt({ announce: true }); } catch (error) { setStatus(error.message, true); } finally { setBusy(button, false); } });
-window.addEventListener('blur', () => { if (promptSaveTimer) saveSystemPrompt().catch(() => {}); });
-$('btnDirectTranslate').addEventListener('click', translateDirect); $('directInput').addEventListener('keydown', (event) => { if ((event.ctrlKey || event.metaKey) && event.key === 'Enter') { event.preventDefault(); translateDirect(); } }); $('btnSelection').addEventListener('click', translateSelection); $('btnTranslatePage').addEventListener('click', translatePage);
-$('btnCopyDirect').addEventListener('click', () => navigator.clipboard.writeText($('directOutputText').textContent).then(() => setStatus('Copied.')).catch(() => setStatus('Unable to copy.', true))); $('enableSelection').addEventListener('change', async (event) => { const enabled = event.target.checked; await chrome.storage.local.set({ enableSelection: enabled }); const tabs = await chrome.tabs.query({}); await Promise.all(tabs.map((tab) => chrome.tabs.sendMessage(tab.id, { type: 'SET_SELECTION_ENABLED', enabled }).catch(() => {}))); setStatus(enabled ? 'Selection tools enabled.' : 'Selection tools disabled.'); });
-document.querySelectorAll('.mode-button').forEach((button) => button.addEventListener('click', async () => { const mode = button.dataset.mode; updatePlacement(mode); await chrome.storage.local.set({ translationDisplayMode: mode }); const tabs = await chrome.tabs.query({}); await Promise.all(tabs.map((tab) => chrome.tabs.sendMessage(tab.id, { type: 'SET_DISPLAY_MODE', mode }).catch(() => {}))); setStatus(`${mode === 'replace' ? 'Replace' : 'Badge'} placement selected.`); }));
-$('btnHistory').addEventListener('click', async () => { const panel = $('historyPanel'); panel.hidden = !panel.hidden; if (!panel.hidden) await renderHistory(); }); $('btnClearHistory').addEventListener('click', async () => { await chrome.runtime.sendMessage({ type: 'CLEAR_HISTORY' }); renderHistory(); });
-
+bindEvents();
 init().catch((error) => setStatus(error.message, true));

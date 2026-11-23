@@ -23,10 +23,13 @@ jobs:
           cache: npm
       - name: Verify tag and package version
         shell: pwsh
+        env:
+          TAG: ${{ github.ref_name }}
         run: |
           $packageVersion = node -p "require('./package.json').version"
-          if ("v$packageVersion" -ne "${{ github.ref_name }}") {
-            throw "Tag ${{ github.ref_name }} does not match package version $packageVersion."
+          $manifestVersion = node -p "require('./src/manifest.json').version"
+          if ("v$packageVersion" -ne $env:TAG -or $manifestVersion -ne $packageVersion) {
+            throw "Tag $env:TAG must equal v<package version> ($packageVersion) and manifest version ($manifestVersion)."
           }
       - name: Install dependencies
         run: npm ci
@@ -48,10 +51,11 @@ jobs:
         shell: pwsh
         env:
           GH_TOKEN: ${{ github.token }}
+          TAG: ${{ github.ref_name }}
+          REPO: ${{ github.repository }}
         run: |
-          if (gh release view "${{ github.ref_name }}" --repo "${{ github.repository }}" 2>$null) {
-            gh release upload "${{ github.ref_name }}" $env:ZIP_PATH $env:CHECKSUM_PATH --clobber --repo "${{ github.repository }}"
+          if (gh release view $env:TAG --repo $env:REPO 2>$null) {
+            gh release upload $env:TAG $env:ZIP_PATH $env:CHECKSUM_PATH --clobber --repo $env:REPO
           } else {
-            gh release create "${{ github.ref_name }}" $env:ZIP_PATH $env:CHECKSUM_PATH --verify-tag --generate-notes --title "LingoFlux ${{ github.ref_name }}" --repo "${{ github.repository }}"
+            gh release create $env:TAG $env:ZIP_PATH $env:CHECKSUM_PATH --verify-tag --generate-notes --title "LingoFlux $env:TAG" --repo $env:REPO
           }
-

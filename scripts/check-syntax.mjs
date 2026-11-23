@@ -1,32 +1,33 @@
-import { readFile } from 'node:fs/promises';
+/**
+ * Parses every src/**\/*.js file in the right mode (classic content script vs
+ * ES module) without executing it. Requires --experimental-vm-modules.
+ */
+
+import { readFileSync } from 'node:fs';
 import path from 'node:path';
 import vm from 'node:vm';
-import { fileURLToPath } from 'node:url';
+import { classifySourceFiles, root, toPosix } from './lib/source-files.mjs';
 
-const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+const { classicScripts, modules } = classifySourceFiles();
+const failures = [];
 
-const moduleFiles = [
-  'src/scripts/background.js',
-  'src/scripts/lib/api.js',
-  'src/scripts/lib/config.js',
-  'src/scripts/lib/storage.js',
-  'src/scripts/lib/translation-utils.js'
-];
-
-const classicScriptFiles = [
-  'src/scripts/content.js',
-  'src/pages/popup/popup.js',
-  'src/pages/options/options.js'
-];
-
-for (const relativePath of moduleFiles) {
-  const source = await readFile(path.join(root, relativePath), 'utf8');
-  new vm.SourceTextModule(source, { identifier: relativePath });
+for (const file of modules) {
+  try {
+    new vm.SourceTextModule(readFileSync(file, 'utf8'), { identifier: toPosix(path.relative(root, file)) });
+  } catch (error) {
+    failures.push(`${toPosix(path.relative(root, file))}: ${error.message}`);
+  }
+}
+for (const file of classicScripts) {
+  try {
+    new vm.Script(readFileSync(file, 'utf8'), { filename: toPosix(path.relative(root, file)) });
+  } catch (error) {
+    failures.push(`${toPosix(path.relative(root, file))}: ${error.message}`);
+  }
 }
 
-for (const relativePath of classicScriptFiles) {
-  const source = await readFile(path.join(root, relativePath), 'utf8');
-  new vm.Script(source, { filename: relativePath });
+if (failures.length) {
+  console.error(`Syntax errors:\n${failures.join('\n')}`);
+  process.exit(1);
 }
-
-console.log(`Syntax checks passed for ${moduleFiles.length + classicScriptFiles.length} files.`);
+console.log(`Syntax OK: ${modules.length} modules, ${classicScripts.length} classic scripts.`);

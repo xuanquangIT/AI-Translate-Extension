@@ -1,6 +1,6 @@
 name: Feature request
 description: Propose a focused improvement that fits LingoFlux's translation purpose.
-title: "[Feature]: "
+title: '[Feature]: '
 labels:
   - enhancement
 body:
@@ -58,4 +58,3 @@ body:
           required: true
         - label: I have not included credentials, confidential text, or personal data.
           required: true
-

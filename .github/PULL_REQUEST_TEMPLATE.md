@@ -1,27 +1,26 @@
+<!-- Title = squash commit message: Conventional Commit, e.g. `fix(storage): reselect model after provider removal`. -->
+
 ## Summary
 
-Describe the user-facing problem and the scope of this change.
+What user-facing problem this solves and the scope of the change.
 
 ## Change surface
 
-- Runtime owner/context:
-- Messages or storage:
+Use `None` where a surface is not affected (layers: `docs/ARCHITECTURE.md`).
+
+- Layers/modules touched:
+- Messages, storage keys, or defaults (`docs/CONTRACTS.md` updated?):
 - Provider/API behavior:
 - DOM or UI behavior:
 - Permissions, privacy, or security:
-- Documentation:
-
-Use `None` where a surface is not affected.
+- Docs / CHANGELOG:
 
 ## Validation
 
-- [ ] `npm test`
-- [ ] `npm run build`
-- [ ] Loaded or reloaded the generated `dist` build
-- [ ] Checked relevant popup, service-worker, and tab consoles
-- [ ] Tested the relevant success path
-- [ ] Tested the relevant failure and reload path
-- [ ] Added screenshots for visible UI changes
+- [ ] `npm run verify` passes locally
+- [ ] New behavior has a test; a bug fix has a regression test that failed before the fix
+- [ ] Manual browser checks from `docs/TESTING.md` for UI/DOM/provider changes (list rows below), or stated as not run
+- [ ] Screenshots for visible UI changes
 
 Commands and observed results:
 
@@ -35,11 +34,13 @@ Manual browser coverage and anything not tested:
 
 - [ ] No API key, authorization header, `.env` content, private page text, or personal data is included.
 - [ ] Provider output is rendered as text and no remote executable code was added.
-- [ ] Any new permission or host access is minimal and documented.
-- [ ] Public behavior, storage, privacy, and release documentation is updated where applicable.
-- [ ] Generated `dist/` and release ZIP files are not committed.
+- [ ] Any new permission or host access is minimal and documented in `PRIVACY.md`.
+- [ ] `dist/`, release ZIPs, and `.tasks/` state are not committed.
+
+## Agent work (if any)
+
+Batch / task ids and branches, or `None`.
 
 ## Related issue
 
 Closes #
-

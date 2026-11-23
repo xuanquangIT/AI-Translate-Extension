@@ -1,0 +1,32 @@
+# Repository labels. Not synced automatically; create missing ones once with `gh label create` (maintainer).
+# Type labels drive release-note sections (.github/release.yml); area labels are applied by .github/labeler.yml.
+
+# Type
+- { name: bug, color: d73a4a, description: Something isn't working }
+- { name: enhancement, color: a2eeef, description: New feature or request }
+- { name: documentation, color: 0075ca, description: Improvements or additions to documentation }
+- { name: dependencies, color: 0366d6, description: Dependency updates }
+- { name: tests, color: c5def5, description: Test-only changes }
+- { name: breaking, color: b60205, description: Breaking storage, permission, or contract change }
+- { name: security, color: ee0701, description: Security-relevant change }
+- { name: skip-changelog, color: ededed, description: Exclude from release notes }
+
+# Area
+- { name: 'area: shared', color: 5319e7, description: src/shared }
+- { name: 'area: providers', color: 5319e7, description: src/providers }
+- { name: 'area: translation', color: 5319e7, description: src/translation }
+- { name: 'area: storage', color: 5319e7, description: src/storage }
+- { name: 'area: background', color: 5319e7, description: src/background }
+- { name: 'area: content', color: 5319e7, description: src/content }
+- { name: 'area: ui', color: 5319e7, description: Popup, options, assets, locales }
+- { name: 'area: manifest', color: 5319e7, description: src/manifest.json }
+- { name: 'area: agents', color: 1d76db, description: AGENTS.md, .agents, .claude }
+- { name: 'area: tooling', color: 1d76db, description: Scripts, CI, lint, packaging }
+
+# Triage
+- { name: good first issue, color: 7057ff, description: Good for newcomers }
+- { name: help wanted, color: 008672, description: Extra attention is needed }
+- { name: question, color: d876e3, description: Further information is requested }
+- { name: duplicate, color: cfd3d7, description: This issue or pull request already exists }
+- { name: invalid, color: e4e669, description: This doesn't seem right }
+- { name: wontfix, color: ffffff, description: This will not be worked on }
