@@ -1,9 +1,12 @@
 /**
  * Downloads the local MT runtime into `.local-mt/` (git-ignored, never committed):
  *   - llama.cpp Windows CUDA build + CUDA runtime DLLs (official ggml-org/llama.cpp GitHub release)
- *   - Gemma 4 E2B instruct GGUF (unsloth/gemma-4-E2B-it-GGUF on Hugging Face, Apache-2.0)
+ *   - the selected model GGUFs (scripts/local-mt/models.mjs): Gemma 4 E2B instruct (unsloth/gemma-4-E2B-it-GGUF,
+ *     Apache-2.0) and/or Index-Translate 2B Q8_0 (IndexTeam/Index-Translate-2B-GGUF, Apache-2.0)
  *
- * Usage: node scripts/local-mt/setup.mjs [--quant Q4_K_M|Q5_K_M|Q6_K|Q8_0] [--cuda 13] [--tag b12631] [--skip-llama]
+ * Usage: node scripts/local-mt/setup.mjs [--models gemma|index|all] [--quant Q4_K_M|Q5_K_M|Q6_K|Q8_0] [--cuda 13]
+ *        [--tag b12631] [--skip-llama]
+ * --models defaults to the saved selection (.local-mt/config.json), else gemma. --quant applies to Gemma only.
  * Existing files are kept. Windows x64 + NVIDIA only; on other systems install llama.cpp yourself and
  * pass --skip-llama.
  */
@@ -14,14 +17,16 @@ import { Readable } from 'node:stream';
 import { pipeline } from 'node:stream/promises';
 import { execFileSync } from 'node:child_process';
 import { pickCudaRelease } from './lib.mjs';
-import { DEFAULT_QUANT, LOCAL_MT_DIR, LLAMA_DIR, MODELS_DIR, MODEL_REPO, modelFile } from './paths.mjs';
+import { parseModelSelection, readSelection, resolveModel } from './models.mjs';
+import { LLAMA_PORT, LOCAL_MT_DIR, LLAMA_DIR, MODELS_DIR } from './paths.mjs';
 
 const args = process.argv.slice(2);
 const arg = (flag, fallback) => {
   const index = args.indexOf(flag);
   return index >= 0 && args[index + 1] ? args[index + 1] : fallback;
 };
-const quant = arg('--quant', DEFAULT_QUANT);
+const quant = arg('--quant', '');
+const selection = arg('--models', readSelection());
 const cudaMajor = arg('--cuda', '13');
 const tag = arg('--tag', '');
 const skipLlama = args.includes('--skip-llama');
@@ -128,13 +133,16 @@ async function setupLlama() {
   console.log(`installed llama.cpp ${release.tag} → .local-mt/llama/`);
 }
 
-async function setupModel() {
+async function setupModels() {
   mkdirSync(MODELS_DIR, { recursive: true });
-  const file = modelFile(quant);
-  await download(`https://huggingface.co/${MODEL_REPO}/resolve/main/${path.basename(file)}`, file);
+  for (const model of parseModelSelection(selection)) {
+    const { label, url, file } = resolveModel(model, { quant, llamaPort: LLAMA_PORT });
+    console.log(`${label}:`);
+    await download(url, file);
+  }
 }
 
 mkdirSync(LOCAL_MT_DIR, { recursive: true });
 if (!skipLlama) await setupLlama();
-await setupModel();
-console.log('Done. Start with: npm run local-mt:start');
+await setupModels();
+console.log(`Done. Start with: npm run local-mt:start -- --models ${selection}`);

@@ -5,8 +5,11 @@ All notable changes to LingoFlux Translator will be documented in this file.
 ## [Unreleased]
 
 ### Added
+- Providers can limit which discovered models appear in model pickers, the popup, and fallback (`enabledModels`). New providers start with no discovered models selected (manual models always appear); providers saved before this change keep showing every model until a selection is saved.
+- Options: after you save a provider, its available models are checked and shown as a checklist under that provider (search box, "N of M selected" counter, Select all shown / Clear, Save selection). Nothing is ticked for a new provider, and the default-model list shows only ticked models.
 - Optional local GPU translation: `npm run local-mt:setup` and `npm run local-mt:start` run Google Gemma 4 E2B on llama.cpp behind an OpenAI-compatible bridge (`http://127.0.0.1:37813/v1`) that translates page segments in parallel. See `docs/LOCAL_MT.md`.
 - Local GPU translation can run from the Windows system tray: `npm run local-mt:shortcut` adds a desktop shortcut that starts the server in the background with Start, Stop, Restart, Copy base URL, and Open log in the tray menu.
+- Local GPU translation can load Index-Translate 2B next to or instead of Gemma 4 E2B: pick it in the tray's Model menu or with `--models gemma|index|all`; the bridge lists every loaded model and routes each request by its model id.
 
 ### Fixed
 - Models that write their reasoning inline before the answer (Gemma 4 on the Gemini API `<thought>…</thought>`, `<think>…</think>`) now translate instead of failing the JSON check.

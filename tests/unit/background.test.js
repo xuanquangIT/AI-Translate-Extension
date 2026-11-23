@@ -235,3 +235,134 @@ describe('model catalog', () => {
     assert.ok(response.models.some((model) => model.id === 'remote-chat'));
   });
 });
+
+describe('provider model selection', () => {
+  const remoteModels = () => jsonResponse({ data: [{ id: 'remote-a' }, { id: 'remote-b' }] });
+  const seedSelection = (p1Extra = {}, local = {}) =>
+    resetChromeStorage(chrome, {
+      local: {
+        genericProviderMigrationVersion: 1,
+        providers: [{ ...provider('p1', ['m1']), ...p1Extra }],
+        modelProvider: 'p1',
+        model: 'm1',
+        favoriteModels: [],
+        instructions: [],
+        ...local
+      }
+    });
+  const p1Ids = (response) => response.models.filter((model) => model.provider === 'p1').map((model) => model.id);
+
+  test('a new provider starts with no discovered models; manual models still appear', async (t) => {
+    mockFetch(t, () => jsonResponse({ data: [{ id: 'remote-a' }] }));
+    const saved = await dispatchMessage({
+      type: 'SAVE_PROVIDER',
+      payload: { name: 'New', baseUrl: 'https://new.example/v1', apiKey: 'key-new', manualModels: ['hand'] }
+    });
+    assert.deepEqual(saved.provider.enabledModels, []);
+    const response = await dispatchMessage({ type: 'GET_AVAILABLE_MODELS' });
+    const ids = response.models.filter((model) => model.provider === saved.provider.id).map((model) => model.id);
+    assert.deepEqual(ids, ['hand']);
+  });
+
+  test('only selected and manual models reach the catalog; legacy profiles show all', async (t) => {
+    mockFetch(t, remoteModels);
+    seedSelection({ enabledModels: ['remote-b'] });
+    assert.deepEqual(p1Ids(await dispatchMessage({ type: 'GET_AVAILABLE_MODELS' })).sort(), ['m1', 'remote-b']);
+
+    seedSelection();
+    assert.deepEqual(p1Ids(await dispatchMessage({ type: 'GET_AVAILABLE_MODELS' })).sort(), [
+      'm1',
+      'remote-a',
+      'remote-b'
+    ]);
+  });
+
+  test('editing a provider without enabledModels keeps the selection', async (t) => {
+    mockFetch(t, remoteModels);
+    seedSelection({ enabledModels: ['remote-b'] });
+    const saved = await dispatchMessage({ type: 'SAVE_PROVIDER', payload: { id: 'p1', name: 'Renamed' } });
+    assert.deepEqual(saved.provider.enabledModels, ['remote-b']);
+
+    seedSelection();
+    const legacy = await dispatchMessage({ type: 'SAVE_PROVIDER', payload: { id: 'p1', name: 'Renamed' } });
+    assert.equal('enabledModels' in legacy.provider, false, 'legacy profiles stay legacy');
+  });
+
+  test('resolveModel without a model never picks a non-selected model', async (t) => {
+    const calls = mockFetch(t, (url) =>
+      url.endsWith('/models') ? remoteModels() : openAiChat('{"translation":"Xin chào"}')
+    );
+    seedSelection({ manualModels: [], enabledModels: ['remote-b'] }, { model: '' });
+    const response = await dispatchMessage({ type: 'TRANSLATE_TEXT', payload: { text: 'Hello' } });
+    assert.equal(response.ok, true, response.error);
+    const chat = calls.find((call) => call.url.endsWith('/chat/completions'));
+    assert.equal(chat.body.model, 'remote-b');
+  });
+
+  test('fallback skips favorites that are neither selected nor manual', async (t) => {
+    const calls = mockFetch(t, (url) => {
+      if (url.endsWith('/models')) return remoteModels();
+      return { ok: false, status: 500, text: async () => 'down' };
+    });
+    seedSelection({ enabledModels: ['remote-b'] }, { favoriteModels: ['p1::remote-a', 'p1::remote-b'] });
+    const response = await dispatchMessage({ type: 'TRANSLATE_TEXT', payload: { text: 'Hello' } });
+    assert.equal(response.ok, false);
+    const tried = calls.filter((call) => call.url.endsWith('/chat/completions')).map((call) => call.body.model);
+    assert.deepEqual(tried, ['m1', 'remote-b']);
+  });
+
+  test('deselecting a model drops its favorite and re-selects the default and session model', async () => {
+    seedSelection(
+      { manualModels: ['m1'], enabledModels: ['remote-a', 'remote-b'] },
+      { model: 'remote-a', favoriteModels: ['p1::remote-a', 'p1::remote-b', 'p2::remote-a'] }
+    );
+    chrome.storage.session.data.sessionModelProvider = 'p1';
+    chrome.storage.session.data.sessionModel = 'remote-a';
+
+    await dispatchMessage({ type: 'SAVE_PROVIDER', payload: { id: 'p1', enabledModels: ['remote-b'] } });
+    assert.deepEqual(chrome.storage.local.data.favoriteModels, ['p1::remote-b', 'p2::remote-a']);
+    assert.equal(chrome.storage.local.data.modelProvider, 'p1');
+    assert.equal(chrome.storage.local.data.model, 'm1');
+    assert.equal('sessionModelProvider' in chrome.storage.session.data, false);
+  });
+
+  test('GET_PROVIDER_MODEL_OPTIONS lists every model with the selection and no credentials', async (t) => {
+    mockFetch(t, remoteModels);
+    seedSelection({ enabledModels: ['remote-b'] });
+    const response = await dispatchMessage({ type: 'GET_PROVIDER_MODEL_OPTIONS', payload: { providerId: 'p1' } });
+    assert.deepEqual(response, {
+      ok: true,
+      models: [
+        { id: 'm1', name: 'm1' },
+        { id: 'remote-a', name: 'remote-a' },
+        { id: 'remote-b', name: 'remote-b' }
+      ],
+      enabledModels: ['remote-b']
+    });
+    const serialized = JSON.stringify(response);
+    assert.ok(!serialized.includes('key-p1'), 'API key must not leak');
+    assert.ok(!serialized.includes('p1.example'), 'base URL must not leak');
+
+    seedSelection();
+    const legacy = await dispatchMessage({ type: 'GET_PROVIDER_MODEL_OPTIONS', payload: { providerId: 'p1' } });
+    assert.equal(legacy.enabledModels, null);
+  });
+
+  test('GET_PROVIDER_MODEL_OPTIONS reports discovery errors and unknown providers', async (t) => {
+    mockFetch(t, () => ({ ok: false, status: 404, text: async () => 'no models' }));
+    seedSelection({ enabledModels: [] });
+    const response = await dispatchMessage({
+      type: 'GET_PROVIDER_MODEL_OPTIONS',
+      payload: { providerId: 'p1', force: true }
+    });
+    assert.equal(response.ok, true);
+    assert.deepEqual(response.models, [{ id: 'm1', name: 'm1' }]);
+    assert.match(response.error, /404/);
+    assert.ok(!response.error.includes('key-p1'));
+
+    assert.deepEqual(await dispatchMessage({ type: 'GET_PROVIDER_MODEL_OPTIONS', payload: { providerId: 'nope' } }), {
+      ok: false,
+      error: 'Provider not found.'
+    });
+  });
+});

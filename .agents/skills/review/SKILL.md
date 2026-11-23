@@ -26,10 +26,10 @@ their direct callers.
 
 ## Output
 
-One line per finding, most severe first:
+One numbered line per finding, most severe first:
 
 ```text
-path:line — <severity: blocker|major|minor> — <problem>. <suggested fix>.
+R<n>. path:line — <severity: blocker|major|minor> — <problem>. <suggested fix>.
 ```
 
 End with `VERDICT: approve | request-changes`. No praise, no style nits that Prettier/ESLint already cover.

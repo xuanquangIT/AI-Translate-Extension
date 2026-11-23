@@ -3,7 +3,7 @@ import globals from 'globals';
 
 /** Lint rules focus on correctness; formatting belongs to Prettier. */
 export default [
-  { ignores: ['dist/**', 'node_modules/**', 'coverage/**', '*.zip', '.local-mt/**'] },
+  { ignores: ['dist/**', 'node_modules/**', 'coverage/**', '*.zip', '.local-mt/**', '.claude/worktrees/**'] },
   js.configs.recommended,
   {
     files: ['**/*.js', '**/*.mjs'],

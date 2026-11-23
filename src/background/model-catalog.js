@@ -8,7 +8,18 @@ import { storageReady } from './storage-ready.js';
 
 const CATALOG_KEY = 'providerModelCatalog';
 
-function mergeModels(provider, discovered) {
+/**
+ * True when `modelId` may be offered for `provider`: manual models always, discovered
+ * models only when listed in `enabledModels`. Legacy profiles (field absent) allow all.
+ */
+export function isModelSelectable(provider, modelId) {
+  if (!provider || !modelId) return false;
+  if (!Array.isArray(provider.enabledModels)) return true;
+  return (provider.manualModels || []).includes(modelId) || provider.enabledModels.includes(modelId);
+}
+
+/** Manual models first, then discovered ones; `selectedOnly` drops models that are not selectable. */
+function mergeModels(provider, discovered, { selectedOnly = true } = {}) {
   const seen = new Set();
   const manual = (provider.manualModels || []).map((id) => ({
     id,
@@ -17,25 +28,34 @@ function mergeModels(provider, discovered) {
     apiType: provider.apiType,
     tier: 'manual'
   }));
-  return [...manual, ...(discovered || [])].filter((model) => !seen.has(model.id) && seen.add(model.id));
+  const offered = selectedOnly
+    ? (discovered || []).filter((model) => isModelSelectable(provider, model.id))
+    : discovered || [];
+  return [...manual, ...offered].filter((model) => !seen.has(model.id) && seen.add(model.id));
 }
 
-async function modelsForProvider(provider, catalog, errors, force) {
+/** Unfiltered discovered models for one provider, from the session cache or `/models`. */
+async function discoverModels(provider, catalog, errors, force) {
   const cached = catalog[provider.id];
   if (!force && cached && Date.now() - cached.at < LIMITS.MODEL_CACHE_TTL_MS) {
     if (cached.error) errors[provider.id] = cached.error;
-    return mergeModels(provider, cached.models);
+    return cached.models;
   }
   try {
     const models = await listProviderModels(provider);
     catalog[provider.id] = { at: Date.now(), models };
-    return mergeModels(provider, models);
+    return models;
   } catch (error) {
     const message = error?.message || String(error);
     errors[provider.id] = message;
     catalog[provider.id] = { at: Date.now(), models: [], error: message };
-    return mergeModels(provider, []);
+    return [];
   }
+}
+
+async function readCatalog() {
+  const session = await chrome.storage.session.get([CATALOG_KEY]);
+  return session[CATALOG_KEY] || {};
 }
 
 /**
@@ -46,11 +66,12 @@ export async function getAvailableModels({ force = false } = {}) {
   await storageReady;
   const providers = (await getProviders()).filter(isProviderReady);
   const favorites = await getFavoriteModels();
-  const session = await chrome.storage.session.get([CATALOG_KEY]);
-  const catalog = session[CATALOG_KEY] || {};
+  const catalog = await readCatalog();
   const errors = {};
 
-  const results = await Promise.all(providers.map((provider) => modelsForProvider(provider, catalog, errors, force)));
+  const results = await Promise.all(
+    providers.map(async (provider) => mergeModels(provider, await discoverModels(provider, catalog, errors, force)))
+  );
   await chrome.storage.session.set({ [CATALOG_KEY]: catalog });
 
   const favoriteSet = new Set(favorites);
@@ -65,6 +86,30 @@ export async function getAvailableModels({ force = false } = {}) {
     errors,
     providers: providers.map(({ id, name, apiType, manualModels }) => ({ id, name, apiType, manualModels }))
   };
+}
+
+/**
+ * Every model the Options checklist can offer for one provider: manual + all discovered,
+ * unfiltered by selection. `enabledModels: null` means legacy (all discovered models shown).
+ * @returns {Promise<{models: {id, name}[], enabledModels: string[]|null, error?: string}>} Never contains credentials.
+ */
+export async function getProviderModelOptions({ providerId, force = false } = {}) {
+  await storageReady;
+  const provider = (await getProviders()).find((item) => item.id === providerId);
+  if (!provider) throw new Error('Provider not found.');
+  if (!provider.baseUrl || !provider.apiKey) throw new Error('Provider base URL and API key are required.');
+
+  const catalog = await readCatalog();
+  const errors = {};
+  const discovered = await discoverModels(provider, catalog, errors, force);
+  await chrome.storage.session.set({ [CATALOG_KEY]: catalog });
+
+  const result = {
+    models: mergeModels(provider, discovered, { selectedOnly: false }).map(({ id, label }) => ({ id, name: label })),
+    enabledModels: Array.isArray(provider.enabledModels) ? [...provider.enabledModels] : null
+  };
+  if (errors[provider.id]) result.error = errors[provider.id];
+  return result;
 }
 
 /** Drops one provider's cached catalog, or all of them when `providerId` is empty. */

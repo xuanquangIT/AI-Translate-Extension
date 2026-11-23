@@ -8,8 +8,10 @@ export const LOCAL_MT_DIR = path.join(ROOT, '.local-mt');
 export const LLAMA_DIR = path.join(LOCAL_MT_DIR, 'llama');
 export const MODELS_DIR = path.join(LOCAL_MT_DIR, 'models');
 
-/** Google Gemma 4 E2B instruction model, GGUF build by Unsloth (Apache-2.0). */
-export const MODEL_REPO = 'unsloth/gemma-4-E2B-it-GGUF';
+/**
+ * Default model (Gemma 4 E2B, Q4_K_M) file and id. The full catalog, including Index-Translate 2B, its repositories
+ * and ports, is scripts/local-mt/models.mjs.
+ */
 export const DEFAULT_QUANT = 'Q4_K_M';
 
 export const modelFile = (quant = DEFAULT_QUANT) => path.join(MODELS_DIR, `gemma-4-E2B-it-${quant}.gguf`);

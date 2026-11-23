@@ -156,18 +156,126 @@ body {
   display: grid;
   gap: 10px;
 }
+.provider-item,
+.instruction-row {
+  border: 1px solid #dce4ef;
+  border-radius: 12px;
+  background: #fbfcfe;
+}
 .provider-row,
 .instruction-row {
   display: flex;
   align-items: center;
   gap: 13px;
   padding: 14px 15px;
-  border: 1px solid #dce4ef;
-  border-radius: 12px;
-  background: #fbfcfe;
 }
-.provider-row.disabled {
+.provider-item.disabled {
   opacity: 0.55;
+}
+.model-panel {
+  border-top: 1px solid #e3e9f2;
+}
+.model-panel > summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 15px;
+  color: #31425c;
+  font-size: 12px;
+  font-weight: 780;
+  cursor: pointer;
+}
+.model-panel-summary {
+  color: #6b7a91;
+  font-weight: 600;
+}
+.model-panel-body {
+  display: grid;
+  gap: 10px;
+  padding: 2px 15px 15px;
+}
+.model-panel-body [hidden] {
+  display: none;
+}
+.model-status {
+  margin: 0;
+  color: #687890;
+  font-size: 12px;
+  line-height: 1.5;
+}
+.model-status:empty {
+  display: none;
+}
+.model-status.error {
+  color: #b42318;
+}
+.model-toolbar,
+.model-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+.model-search {
+  flex: 1 1 220px;
+  width: auto;
+  min-width: 0;
+}
+.model-list {
+  max-height: 300px;
+  overflow-y: auto;
+  border: 1px solid #dce4ef;
+  border-radius: 10px;
+  background: #fff;
+}
+.model-item {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 7px 11px;
+  font-size: 13px;
+  cursor: pointer;
+}
+.model-item + .model-item {
+  border-top: 1px solid #eef2f7;
+}
+.model-item:hover {
+  background: #f8faff;
+}
+.model-item.locked {
+  color: #6b7a91;
+  cursor: default;
+}
+.model-item input {
+  flex: none;
+  width: auto;
+  margin: 0;
+  accent-color: #1d4f9a;
+}
+.model-name {
+  min-width: 0;
+  font-weight: 650;
+  overflow-wrap: anywhere;
+}
+.model-id {
+  min-width: 0;
+  color: #718099;
+  font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+  font-size: 11px;
+  overflow-wrap: anywhere;
+}
+.model-empty {
+  margin: 0;
+  padding: 10px 11px;
+}
+.button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.hint.attention {
+  color: #9a5b00;
+  font-weight: 700;
 }
 .provider-info,
 .instruction-info {
