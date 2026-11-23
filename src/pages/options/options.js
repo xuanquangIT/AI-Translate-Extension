@@ -461,6 +461,12 @@ function renderProviders() {
 
 /** Row "Refresh models": re-discovers one provider's models, shows its checklist, then updates the picker. */
 async function refreshProviderModels(provider) {
+  if (panelChanged(provider.id)) {
+    return message(
+      `Save your model selection for ${provider.name} first (or reload this page to discard it), then refresh its models.`,
+      true
+    );
+  }
   message(`Refreshing models for ${provider.name}…`);
   await showProviderModels(provider.id, { force: true });
   await loadModels({ preferredModel: currentModel().model, preferredProvider: currentModel().modelProvider });
@@ -514,14 +520,31 @@ function providerFormPayload() {
  * never sends `enabledModels`, so editing keeps the stored selection; a new provider starts empty.
  */
 async function saveProvider(refresh = false) {
-  const result = await request(M.SAVE_PROVIDER, providerFormPayload(), 'Unable to save provider.');
+  const payload = providerFormPayload();
+  const before = state.providers.find((item) => item.id === payload.id);
+  const result = await request(M.SAVE_PROVIDER, payload, 'Unable to save provider.');
   const providerId = result.provider.id;
   closeProviderForm();
   ensurePanel(providerId).open = true;
+  // Unsaved ticks survive only while the checklist still describes the same endpoint and manual models.
+  const sameSource =
+    Boolean(before) &&
+    before.baseUrl === result.provider.baseUrl &&
+    before.apiKey === result.provider.apiKey &&
+    before.apiType === result.provider.apiType &&
+    JSON.stringify(before.manualModels || []) === JSON.stringify(result.provider.manualModels || []);
+  const keepTicks = sameSource && panelChanged(providerId);
   await loadProviders();
   // The checklist loads first so the picker reload below reads a warm catalog (no second discovery).
-  await showProviderModels(providerId, { force: refresh });
+  // A checklist with unsaved ticks is left alone so a reload cannot discard them.
+  if (!keepTicks) await showProviderModels(providerId, { force: refresh });
   await loadModels({ preferredProvider: providerId });
+  if (keepTicks) {
+    const skipped = refresh ? ' Models were not refreshed.' : '';
+    return message(
+      `Provider saved. Your unsaved model selection was kept; click Save selection to apply it.${skipped}`
+    );
+  }
   const panel = ensurePanel(providerId);
   if (panel.status === 'failed')
     return message(`Provider saved, but models could not be checked: ${panel.error}`, true);

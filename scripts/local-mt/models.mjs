@@ -40,7 +40,7 @@ export function buildIndexTranslatePrompt({ text, targetLanguage }) {
   const code = String(targetLanguage || '')
     .trim()
     .toLowerCase();
-  const target = ZH_NAMES[code] || languageName(targetLanguage);
+  const target = Object.hasOwn(ZH_NAMES, code) ? ZH_NAMES[code] : languageName(targetLanguage);
   return `请将以下文本翻译为${target}，直接输出翻译结果，不要进行任何解释。\n\n${text}`;
 }
 

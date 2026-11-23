@@ -12,6 +12,7 @@ All notable changes to LingoFlux Translator will be documented in this file.
 - Local GPU translation can load Index-Translate 2B next to or instead of Gemma 4 E2B: pick it in the tray's Model menu or with `--models gemma|index|all`; the bridge lists every loaded model and routes each request by its model id.
 
 ### Fixed
+- Options: refreshing a provider's models or saving it no longer discards model ticks you have not saved yet, and the "no model available" error now points to the model checklist; ticks are dropped only if the provider endpoint or manual models changed.
 - Models that write their reasoning inline before the answer (Gemma 4 on the Gemini API `<thought>…</thought>`, `<think>…</think>`) now translate instead of failing the JSON check.
 - Translate page no longer freezes: it now translates what is on screen first and returns at once instead of waiting for the whole page.
 - Translated page text no longer reverts to the original while scrolling or when the site re-renders; translations are applied in place and re-applied after re-renders.

@@ -299,6 +299,15 @@ describe('provider model selection', () => {
     assert.equal(chat.body.model, 'remote-b');
   });
 
+  test('resolveModel with nothing ticked tells the user to tick models, not to refresh', async (t) => {
+    mockFetch(t, (url) => (url.endsWith('/models') ? remoteModels() : openAiChat('{"translation":"x"}')));
+    seedSelection({ manualModels: [], enabledModels: [] }, { model: '' });
+    const response = await dispatchMessage({ type: 'TRANSLATE_TEXT', payload: { text: 'Hello' } });
+    assert.equal(response.ok, false);
+    assert.match(response.error, /tick the ones to use/);
+    assert.doesNotMatch(response.error, /Refresh its models/);
+  });
+
   test('fallback skips favorites that are neither selected nor manual', async (t) => {
     const calls = mockFetch(t, (url) => {
       if (url.endsWith('/models')) return remoteModels();
