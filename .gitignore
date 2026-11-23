@@ -1,11 +1,24 @@
 # Dependencies
 node_modules/
 
-# Environment files
-.env
-.env.local
+# Build outputs
+dist/
+coverage/
+*.zip
+*.zip.sha256
 
-# IDE
+# Secrets (use .env.example as the template)
+.env
+.env.*
+!.env.example
+
+# Agent runtime state (orchestrator batch state is local; only the format README is committed)
+.tasks/*
+!.tasks/README.md
+.claude/settings.local.json
+.claude/worktrees/
+
+# Editors
 .vscode/
 .idea/
 *.swp
@@ -16,17 +29,12 @@ node_modules/
 Thumbs.db
 desktop.ini
 
-# Logs
+# Logs and temp
 *.log
 npm-debug.log*
-
-# Build outputs
-dist/
-build/
-
-# Temporary
 *.tmp
 *.temp
 
-# Archive
-*.zip
+# Local MT runtime (llama.cpp binaries and model weights; see docs/LOCAL_MT.md)
+.local-mt/
+*.gguf

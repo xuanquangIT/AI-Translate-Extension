@@ -1,0 +1,54 @@
+# actions/labeler v5 config: area labels by changed path. Label definitions: .github/labels.yml.
+
+'area: shared':
+  - changed-files:
+      - any-glob-to-any-file: src/shared/**
+'area: providers':
+  - changed-files:
+      - any-glob-to-any-file: src/providers/**
+'area: translation':
+  - changed-files:
+      - any-glob-to-any-file: src/translation/**
+'area: storage':
+  - changed-files:
+      - any-glob-to-any-file: src/storage/**
+'area: background':
+  - changed-files:
+      - any-glob-to-any-file: src/background/**
+'area: content':
+  - changed-files:
+      - any-glob-to-any-file: src/content/**
+'area: ui':
+  - changed-files:
+      - any-glob-to-any-file:
+          - src/pages/**
+          - src/assets/**
+          - src/_locales/**
+'area: manifest':
+  - changed-files:
+      - any-glob-to-any-file: src/manifest.json
+'area: agents':
+  - changed-files:
+      - any-glob-to-any-file:
+          - AGENTS.md
+          - CLAUDE.md
+          - GEMINI.md
+          - .agents/**
+          - .claude/**
+          - .tasks/**
+'area: tooling':
+  - changed-files:
+      - any-glob-to-any-file:
+          - scripts/**
+          - .github/**
+          - eslint.config.js
+          - package.json
+          - package-lock.json
+tests:
+  - changed-files:
+      - any-glob-to-any-file: tests/**
+documentation:
+  - changed-files:
+      - any-glob-to-any-file:
+          - docs/**
+          - '*.md'

@@ -1,27 +1,79 @@
 <!doctype html>
 <html lang="en">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>LingoFlux</title>
-  <link rel="stylesheet" href="popup.css">
-</head>
-<body>
-  <main class="popup-shell">
-    <header class="header"><div class="brand"><span class="mark">LF</span><div><h1>LingoFlux</h1><p id="providerSummary">Set up a provider to begin</p></div></div><button id="openOptions" class="icon-button" title="Open settings" aria-label="Open settings">⚙</button></header>
-    <section class="workspace">
-      <div class="language-row"><label>From<select id="fromLang"></select></label><span class="arrow">→</span><label>To<select id="toLang"></select></label></div>
-      <label class="field-label">Model<div class="model-row"><select id="model"></select><button id="btnRefreshModels" class="small-button" type="button">Refresh</button><button id="btnFavorite" class="small-button" type="button">☆</button></div></label>
-      <div class="placement" role="group" aria-label="Translation placement"><span>Placement</span><div><button class="mode-button" data-mode="badge" type="button">Badge</button><button class="mode-button" data-mode="replace" type="button">Replace</button></div></div>
-      <textarea id="directInput" rows="5" placeholder="Type or paste text to translate…"></textarea>
-      <div class="actions"><button id="btnDirectTranslate" class="button primary" type="button">Translate text</button><button id="btnSelection" class="button secondary" type="button">Translate selection</button><button id="btnTranslatePage" class="button secondary" type="button">Translate page</button></div>
-      <details class="preference"><summary>Custom system prompt</summary><p class="preference-hint">Applied to every translation and saved on this device. You can use <code>{{sourceLanguage}}</code> and <code>{{targetLanguage}}</code>.</p><textarea id="systemPrompt" rows="4" placeholder="Add translation instructions…"></textarea><button id="btnSaveSystemPrompt" class="small-button save-prompt" type="button">Save prompt</button></details>
-      <section id="directOutput" class="result" hidden><div class="result-heading"><span>Translation</span><button id="btnCopyDirect" class="link-button" type="button">Copy</button></div><div id="directOutputText" class="result-text"></div></section>
-      <p id="status" class="status" role="status" aria-live="polite"></p>
-    </section>
-    <section class="footer"><label class="toggle"><input id="enableSelection" type="checkbox"><span></span>Selection tools</label><button id="btnHistory" class="link-button" type="button">History</button></section>
-    <section id="historyPanel" class="history" hidden><div class="result-heading"><span>Recent translations</span><button id="btnClearHistory" class="link-button danger" type="button">Clear</button></div><div id="historyList"></div></section>
-  </main>
-  <script src="popup.js"></script>
-</body>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>LingoFlux</title>
+    <link rel="stylesheet" href="popup.css" />
+  </head>
+  <body>
+    <main class="popup-shell">
+      <header class="header">
+        <div class="brand">
+          <span class="mark">LF</span>
+          <div>
+            <h1>LingoFlux</h1>
+            <p id="providerSummary">Set up a provider to begin</p>
+          </div>
+        </div>
+        <button id="openOptions" class="icon-button" title="Open settings" aria-label="Open settings">⚙</button>
+      </header>
+      <section class="workspace">
+        <div class="language-row">
+          <label>From<select id="fromLang"></select></label><span class="arrow">→</span
+          ><label>To<select id="toLang"></select></label>
+        </div>
+        <label class="field-label"
+          >Model
+          <div class="model-row">
+            <select id="model"></select
+            ><button id="btnRefreshModels" class="small-button" type="button">Refresh</button
+            ><button id="btnFavorite" class="small-button" type="button">☆</button>
+          </div></label
+        >
+        <div class="placement" role="group" aria-label="Translation placement">
+          <span>Placement</span>
+          <div>
+            <button class="mode-button" data-mode="badge" type="button">Badge</button
+            ><button class="mode-button" data-mode="replace" type="button">Replace</button>
+          </div>
+        </div>
+        <textarea id="directInput" rows="5" placeholder="Type or paste text to translate…"></textarea>
+        <div class="actions">
+          <button id="btnDirectTranslate" class="button primary" type="button">Translate text</button
+          ><button id="btnSelection" class="button secondary" type="button">Translate selection</button
+          ><button id="btnTranslatePage" class="button secondary" type="button">Translate page</button
+          ><button id="btnRestorePage" class="button secondary wide" type="button">Show original page</button>
+        </div>
+        <details class="preference">
+          <summary>Custom system prompt</summary>
+          <p class="preference-hint">
+            Applied to every translation and saved on this device. You can use <code>{{sourceLanguage}}</code> and
+            <code>{{targetLanguage}}</code>.
+          </p>
+          <textarea id="systemPrompt" rows="4" placeholder="Add translation instructions…"></textarea
+          ><button id="btnSaveSystemPrompt" class="small-button save-prompt" type="button">Save prompt</button>
+        </details>
+        <section id="directOutput" class="result" hidden>
+          <div class="result-heading">
+            <span>Translation</span><button id="btnCopyDirect" class="link-button" type="button">Copy</button>
+          </div>
+          <div id="directOutputText" class="result-text"></div>
+        </section>
+        <p id="status" class="status" role="status" aria-live="polite"></p>
+      </section>
+      <section class="footer">
+        <label class="toggle"><input id="enableSelection" type="checkbox" /><span></span>Selection tools</label
+        ><button id="btnHistory" class="link-button" type="button">History</button>
+      </section>
+      <section id="historyPanel" class="history" hidden>
+        <div class="result-heading">
+          <span>Recent translations</span
+          ><button id="btnClearHistory" class="link-button danger" type="button">Clear</button>
+        </div>
+        <div id="historyList"></div>
+      </section>
+    </main>
+    <script type="module" src="popup.js"></script>
+  </body>
 </html>

@@ -1,58 +1,134 @@
 <!doctype html>
 <html lang="en">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>LingoFlux Settings</title>
-  <link rel="stylesheet" href="options.css">
-</head>
-<body>
-  <main class="shell">
-    <header class="page-header">
-      <div class="brand-mark">LF</div>
-      <div><p class="eyebrow">LingoFlux</p><h1>Translation workspace</h1><p class="subtle">Connect any OpenAI-compatible or Anthropic-compatible provider.</p></div>
-    </header>
-
-    <p id="status" class="status" role="status" aria-live="polite"></p>
-
-    <section class="card providers-card">
-      <div class="section-heading"><div><h2>Providers</h2><p>Credentials stay in your browser. Models are fetched from each provider when available.</p></div><button id="btnNewProvider" class="button primary">Add provider</button></div>
-      <div id="providersList" class="provider-list"></div>
-      <form id="providerForm" class="editor" hidden>
-        <input id="providerId" type="hidden">
-        <div class="editor-heading"><h3 id="providerFormTitle">Add provider</h3><button id="btnCancelProvider" type="button" class="button ghost">Cancel</button></div>
-        <div class="field-grid">
-          <label>Name<input id="providerName" maxlength="80" required placeholder="e.g. Company gateway"></label>
-          <label>Compatibility<select id="providerApiType"><option value="openai">OpenAI-compatible</option><option value="anthropic">Anthropic-compatible</option></select></label>
-          <label class="wide">Base URL<input id="providerBaseUrl" type="url" required placeholder="https://api.example.com/v1"></label>
-          <label class="wide">API key<input id="providerApiKey" type="password" required autocomplete="off" placeholder="Stored locally in this browser"></label>
-          <label class="wide">Manual model IDs <span class="hint">Optional; one per line or comma-separated. Use this when `/models` is unavailable.</span><textarea id="providerManualModels" rows="3" placeholder="gpt-4.1-mini&#10;claude-sonnet-4"></textarea></label>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>LingoFlux Settings</title>
+    <link rel="stylesheet" href="options.css" />
+  </head>
+  <body>
+    <main class="shell">
+      <header class="page-header">
+        <div class="brand-mark">LF</div>
+        <div>
+          <p class="eyebrow">LingoFlux</p>
+          <h1>Translation workspace</h1>
+          <p class="subtle">Connect any OpenAI-compatible or Anthropic-compatible provider.</p>
         </div>
-        <div class="form-actions"><button class="button primary" type="submit">Save provider</button><button id="btnSaveAndRefresh" class="button secondary" type="button">Save and refresh models</button></div>
-      </form>
-    </section>
+      </header>
 
-    <section class="card">
-      <div class="section-heading"><div><h2>Translation defaults</h2><p>These are the starting values for a new popup session.</p></div><button id="btnSaveDefaults" class="button primary">Save defaults</button></div>
-      <div class="field-grid">
-        <label>Source language<select id="fromLang"></select></label>
-        <label>Target language<select id="toLang"></select></label>
-        <label class="wide">Model<div class="model-row"><select id="model"></select><button id="btnRefreshModels" class="button secondary" type="button">Refresh</button><button id="btnFavoriteModel" class="button secondary" type="button">Favorite</button></div><small id="modelHelp" class="hint"></small></label>
-        <fieldset class="wide"><legend>Page display</legend><label class="radio"><input name="displayMode" value="badge" type="radio"> Add a translation badge</label><label class="radio"><input name="displayMode" value="replace" type="radio"> Replace selected text</label></fieldset>
-      </div>
-    </section>
+      <p id="status" class="status" role="status" aria-live="polite"></p>
 
-    <section class="card">
-      <div class="section-heading"><div><h2>System prompt</h2><p>Applied to every translation. Use <code>{{sourceLanguage}}</code> and <code>{{targetLanguage}}</code> as optional variables.</p></div></div>
-      <textarea id="systemPrompt" class="prompt" rows="7"></textarea>
-    </section>
+      <section class="card providers-card">
+        <div class="section-heading">
+          <div>
+            <h2>Providers</h2>
+            <p>Credentials stay in your browser. Models are fetched from each provider when available.</p>
+          </div>
+          <button id="btnNewProvider" class="button primary">Add provider</button>
+        </div>
+        <div id="providersList" class="provider-list"></div>
+        <form id="providerForm" class="editor" hidden>
+          <input id="providerId" type="hidden" />
+          <div class="editor-heading">
+            <h3 id="providerFormTitle">Add provider</h3>
+            <button id="btnCancelProvider" type="button" class="button ghost">Cancel</button>
+          </div>
+          <div class="field-grid">
+            <label>Name<input id="providerName" maxlength="80" required placeholder="e.g. Company gateway" /></label>
+            <label
+              >Compatibility<select id="providerApiType">
+                <option value="openai">OpenAI-compatible</option>
+                <option value="anthropic">Anthropic-compatible</option>
+              </select></label
+            >
+            <label class="wide"
+              >Base URL<input id="providerBaseUrl" type="url" required placeholder="https://api.example.com/v1"
+            /></label>
+            <label class="wide"
+              >API key<input
+                id="providerApiKey"
+                type="password"
+                required
+                autocomplete="off"
+                placeholder="Stored locally in this browser"
+            /></label>
+            <label class="wide"
+              >Manual model IDs
+              <span class="hint"
+                >Optional; one per line or comma-separated. Use this when `/models` is unavailable.</span
+              ><textarea id="providerManualModels" rows="3" placeholder="gpt-4.1-mini&#10;claude-sonnet-4"></textarea>
+            </label>
+          </div>
+          <div class="form-actions">
+            <button class="button primary" type="submit">Save provider</button
+            ><button id="btnSaveAndRefresh" class="button secondary" type="button">Save and refresh models</button>
+          </div>
+        </form>
+      </section>
 
-    <section class="card">
-      <div class="section-heading"><div><h2>Translation preferences</h2><p>Enable reusable instructions only when needed. They are appended to the system prompt.</p></div></div>
-      <div id="instructionsList" class="instruction-list"></div>
-      <form id="instructionForm" class="inline-editor"><input id="instructionId" type="hidden"><input id="instructionName" maxlength="80" placeholder="Name, e.g. Product terms"><textarea id="instructionText" rows="2" required placeholder="Keep product names in English."></textarea><button class="button secondary" type="submit">Save preference</button><button id="btnCancelInstruction" class="button ghost" type="button" hidden>Cancel</button></form>
-    </section>
-  </main>
-  <script src="options.js"></script>
-</body>
+      <section class="card">
+        <div class="section-heading">
+          <div>
+            <h2>Translation defaults</h2>
+            <p>These are the starting values for a new popup session.</p>
+          </div>
+          <button id="btnSaveDefaults" class="button primary">Save defaults</button>
+        </div>
+        <div class="field-grid">
+          <label>Source language<select id="fromLang"></select></label>
+          <label>Target language<select id="toLang"></select></label>
+          <label class="wide"
+            >Model
+            <div class="model-row">
+              <select id="model"></select
+              ><button id="btnRefreshModels" class="button secondary" type="button">Refresh</button
+              ><button id="btnFavoriteModel" class="button secondary" type="button">Favorite</button>
+            </div>
+            <small id="modelHelp" class="hint"></small
+          ></label>
+          <fieldset class="wide">
+            <legend>Page display</legend>
+            <label class="radio"><input name="displayMode" value="badge" type="radio" /> Add a translation badge</label
+            ><label class="radio"
+              ><input name="displayMode" value="replace" type="radio" /> Replace selected text</label
+            >
+          </fieldset>
+        </div>
+      </section>
+
+      <section class="card">
+        <div class="section-heading">
+          <div>
+            <h2>System prompt</h2>
+            <p>
+              Applied to every translation. Use <code>{{sourceLanguage}}</code> and <code>{{targetLanguage}}</code> as
+              optional variables.
+            </p>
+          </div>
+        </div>
+        <textarea id="systemPrompt" class="prompt" rows="7"></textarea>
+      </section>
+
+      <section class="card">
+        <div class="section-heading">
+          <div>
+            <h2>Translation preferences</h2>
+            <p>Enable reusable instructions only when needed. They are appended to the system prompt.</p>
+          </div>
+        </div>
+        <div id="instructionsList" class="instruction-list"></div>
+        <form id="instructionForm" class="inline-editor">
+          <input id="instructionId" type="hidden" /><input
+            id="instructionName"
+            maxlength="80"
+            placeholder="Name, e.g. Product terms"
+          /><textarea id="instructionText" rows="2" required placeholder="Keep product names in English."></textarea
+          ><button class="button secondary" type="submit">Save preference</button
+          ><button id="btnCancelInstruction" class="button ghost" type="button" hidden>Cancel</button>
+        </form>
+      </section>
+    </main>
+    <script type="module" src="options.js"></script>
+  </body>
 </html>
