@@ -46,6 +46,9 @@
     "local-mt:tray": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/local-mt/tray.ps1",
     "local-mt:shortcut": "node scripts/local-mt/shortcut.mjs",
     "local-mt:bench": "node scripts/local-mt/bench.mjs",
+    "local-mt:eval-data": "node scripts/local-mt/eval-data.mjs",
+    "local-mt:eval": "node scripts/local-mt/eval.mjs",
+    "local-mt:eval-report": "node scripts/local-mt/eval-report.mjs",
     "verify": "npm run check:syntax && npm run check:extension && npm run lint && npm run format:check && npm test && npm run check:agents && npm run build",
     "dev": "echo Load src/ as an unpacked extension, then reload it after each change."
   },

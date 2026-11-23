@@ -1,9 +1,11 @@
 /**
- * Local OpenAI-compatible bridge between LingoFlux and a llama-server running a small local model (Gemma 4 E2B).
+ * Local OpenAI-compatible bridge between LingoFlux and one llama-server per loaded local model
+ * (scripts/local-mt/models.mjs: Gemma 4 E2B on 37814, Index-Translate 2B on 37815).
  *
- *   LingoFlux ──POST /v1/chat/completions (JSON envelope)──▶ this bridge (127.0.0.1:37813)
- *     ──one request per segment, in parallel──▶ llama-server (127.0.0.1:37814, continuous batching)
+ *   LingoFlux ──POST /v1/chat/completions (JSON envelope, "model": id)──▶ this bridge (127.0.0.1:37813)
+ *     ──one request per segment, in parallel──▶ that model's llama-server (continuous batching)
  *
+ * Standalone use serves a single upstream:
  * Usage: node scripts/local-mt/server.mjs [--port 37813] [--upstream http://127.0.0.1:37814]
  *        [--concurrency 32] [--model gemma-4-e2b-q4_k_m]
  * Binds to 127.0.0.1 only and sends no CORS headers, so web pages cannot read its replies; the
@@ -99,13 +101,27 @@ function readBody(req) {
   });
 }
 
-/** Builds the request handler. `translateText` is injectable for tests. */
-export function createHandler({ model, concurrency, translateText, log = () => {} }) {
+/**
+ * Picks the loaded model a request asks for. An unknown or missing name goes to the first route, so a LingoFlux
+ * provider saved with another model id keeps working after the tray switches models.
+ */
+export function pickRoute(routes, requested) {
+  const name = String(requested || '').trim();
+  return routes.find((route) => route.id === name) ?? routes[0];
+}
+
+/**
+ * Builds the request handler. Pass `routes` ([{ id, translateText, buildPrompt? }], one per loaded model) or the
+ * single-model shorthand `model` + `translateText`. `translateText` is injectable for tests.
+ */
+export function createHandler({ model, concurrency, translateText, buildPrompt, routes, log = () => {} }) {
+  const table = routes?.length ? routes : [{ id: model, translateText, buildPrompt }];
   return async (req, res) => {
     const path = new URL(req.url, 'http://localhost').pathname.replace(/\/+$/, '');
     try {
       if (req.method === 'GET' && (path === '/v1/models' || path === '/models')) {
-        return send(res, 200, { object: 'list', data: [{ id: model, object: 'model', owned_by: 'local' }] });
+        const data = table.map((route) => ({ id: route.id, object: 'model', owned_by: 'local' }));
+        return send(res, 200, { object: 'list', data });
       }
       if (req.method === 'GET' && path === '/health') return send(res, 200, { ok: true });
       if (req.method !== 'POST' || !(path === '/v1/chat/completions' || path === '/chat/completions')) {
@@ -125,34 +141,50 @@ export function createHandler({ model, concurrency, translateText, log = () => {
         return send(res, 400, { error: { message: error.message } });
       }
 
+      const route = pickRoute(table, body.model);
       const started = performance.now();
-      const { content, usage } = await translateEnvelope(envelope, translateText, concurrency);
+      const { content, usage } = await translateEnvelope(
+        envelope,
+        route.translateText,
+        route.concurrency ?? concurrency,
+        route.buildPrompt
+      );
       const ms = performance.now() - started;
       const count = envelope.kind === 'batch' ? envelope.segments.length : 1;
       log(
-        `${envelope.kind} ${count} seg → ${envelope.targetLanguage}: ${ms.toFixed(0)} ms, ` +
+        `${route.id}: ${envelope.kind} ${count} seg → ${envelope.targetLanguage}: ${ms.toFixed(0)} ms, ` +
           `${usage.completion_tokens} out tok, ${((usage.completion_tokens / ms) * 1000).toFixed(0)} tok/s`
       );
-      return send(res, 200, chatCompletion(body.model || model, content, usage));
+      return send(res, 200, chatCompletion(body.model || route.id, content, usage));
     } catch (error) {
       return send(res, 502, { error: { message: `Local translation failed: ${error.message}` } });
     }
   };
 }
 
+/**
+ * Starts the bridge. `options.routes` ([{ id, upstream, buildPrompt, concurrency }]) serves several llama-servers;
+ * without it, one route is built from `options.model` and `options.upstream`.
+ */
 export function startServer(options = parseArgs(process.argv.slice(2))) {
+  const specs = options.routes?.length
+    ? options.routes
+    : [{ id: options.model, upstream: options.upstream, concurrency: options.concurrency }];
+  const routes = specs.map((spec) => ({
+    id: spec.id,
+    buildPrompt: spec.buildPrompt,
+    concurrency: spec.concurrency ?? options.concurrency,
+    translateText: upstreamTranslator({ upstream: spec.upstream })
+  }));
   const handler = createHandler({
-    model: options.model,
+    routes,
     concurrency: options.concurrency,
-    translateText: upstreamTranslator({ upstream: options.upstream }),
     log: (line) => console.log(`[local-mt] ${line}`)
   });
   const server = http.createServer(handler);
   server.listen(options.port, '127.0.0.1', () => {
-    console.log(
-      `[local-mt] bridge on http://127.0.0.1:${options.port}/v1 → ${options.upstream} ` +
-        `(model id "${options.model}", ${options.concurrency} parallel)`
-    );
+    const list = specs.map((spec) => `"${spec.id}" → ${spec.upstream}`).join(', ');
+    console.log(`[local-mt] bridge on http://127.0.0.1:${options.port}/v1: ${list} (default "${specs[0].id}")`);
   });
   return server;
 }

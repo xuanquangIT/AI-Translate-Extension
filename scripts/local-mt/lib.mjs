@@ -108,11 +108,12 @@ export function segmentMaxTokens(text) {
 /**
  * Translates one envelope with `translateText({ prompt, text, maxTokens })`, which returns
  * `{ text, completionTokens, promptTokens }`. Returns the exact JSON content the extension expects.
+ * `buildPrompt` is the model's own instruction format (scripts/local-mt/models.mjs); it defaults to buildMtPrompt.
  */
-export async function translateEnvelope(envelope, translateText, concurrency = 16) {
+export async function translateEnvelope(envelope, translateText, concurrency = 16, buildPrompt = buildMtPrompt) {
   const run = async (text) => {
     if (!text.trim()) return { text, completionTokens: 0, promptTokens: 0 };
-    const prompt = buildMtPrompt({
+    const prompt = buildPrompt({
       text,
       sourceLanguage: envelope.sourceLanguage,
       targetLanguage: envelope.targetLanguage
