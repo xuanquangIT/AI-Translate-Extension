@@ -4,8 +4,14 @@
  */
 
 import { parseFavoriteModelKey, toFavoriteModelKey } from '../shared/model-keys.js';
-import { getFavoriteModels, getProviders, isProviderReady, loadSettingsWithSession } from '../storage/index.js';
-import { getAvailableModels, isModelSelectable } from './model-catalog.js';
+import {
+  getFavoriteModels,
+  getProviders,
+  isModelSelectable,
+  isProviderReady,
+  loadSettingsWithSession
+} from '../storage/index.js';
+import { getAvailableModels } from './model-catalog.js';
 
 export async function resolveModel({ model, modelProvider } = {}) {
   const settings = await loadSettingsWithSession();
@@ -20,7 +26,7 @@ export async function resolveModel({ model, modelProvider } = {}) {
   const first = available.models.find((item) => item.provider === provider.id);
   if (!first) {
     throw new Error(
-      `No model is available for ${provider.name}. Refresh its models or add a manual model in Settings.`
+      `No model is available for ${provider.name}. Tick models for it under Providers in Settings, or add a manual model.`
     );
   }
   return { provider, model: first.id };

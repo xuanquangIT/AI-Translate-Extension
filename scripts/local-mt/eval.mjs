@@ -5,7 +5,7 @@
  *   2. llama-server on a separate port: single-stream probe (time to first token, prompt and generation tok/s),
  *      then every test item at --parallel concurrency, recording each output, its tokens, and the peak VRAM.
  *
- * Usage: node scripts/local-mt/eval.mjs --model <id> [--parallel 8] [--ctx 32768] [--port 37815]
+ * Usage: node scripts/local-mt/eval.mjs --model <id> [--parallel 8] [--ctx 32768] [--port 37820]
  *        [--sets crafted,flores,wmt24pp,ntrex] [--limit N] [--url http://127.0.0.1:PORT (use a running server)]
  * Outputs go to .local-mt/eval/runs/<id>/ (git-ignored). Test text is never printed, only counts and timings.
  */
@@ -27,7 +27,7 @@ const arg = (flag, fallback) => {
 const model = findModel(arg('--model', ''));
 const parallel = Number(arg('--parallel', 8));
 const ctx = Number(arg('--ctx', model.ctx ?? 32768));
-const port = Number(arg('--port', 37815));
+const port = Number(arg('--port', 37820));
 const sets = arg('--sets', 'crafted,flores,wmt24pp,ntrex').split(',');
 const limit = Number(arg('--limit', 0));
 const externalUrl = arg('--url', '');

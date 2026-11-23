@@ -72,6 +72,10 @@ test('each model gets its own prompt format', () => {
   assert.match(buildIndexTranslatePrompt({ text: 'x', targetLanguage: 'ja' }), /翻译为日语/);
   // A language without a Chinese name falls back to its English name.
   assert.match(buildIndexTranslatePrompt({ text: 'x', targetLanguage: 'Swahili' }), /翻译为Swahili/);
+  // Inherited Object properties are not language codes.
+  for (const code of ['constructor', 'toString', '__proto__']) {
+    assert.doesNotMatch(buildIndexTranslatePrompt({ text: 'x', targetLanguage: code }), /native code|\[object/);
+  }
 });
 
 test('perModelBudget splits slots and KV cache when two models share the GPU', () => {

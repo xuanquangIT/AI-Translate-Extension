@@ -3,20 +3,10 @@
 import { listProviderModels } from '../providers/index.js';
 import { LIMITS } from '../shared/config.js';
 import { toFavoriteModelKey } from '../shared/model-keys.js';
-import { getFavoriteModels, getProviders, isProviderReady } from '../storage/index.js';
+import { getFavoriteModels, getProviders, isModelSelectable, isProviderReady } from '../storage/index.js';
 import { storageReady } from './storage-ready.js';
 
 const CATALOG_KEY = 'providerModelCatalog';
-
-/**
- * True when `modelId` may be offered for `provider`: manual models always, discovered
- * models only when listed in `enabledModels`. Legacy profiles (field absent) allow all.
- */
-export function isModelSelectable(provider, modelId) {
-  if (!provider || !modelId) return false;
-  if (!Array.isArray(provider.enabledModels)) return true;
-  return (provider.manualModels || []).includes(modelId) || provider.enabledModels.includes(modelId);
-}
 
 /** Manual models first, then discovered ones; `selectedOnly` drops models that are not selectable. */
 function mergeModels(provider, discovered, { selectedOnly = true } = {}) {

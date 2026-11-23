@@ -461,6 +461,12 @@ function renderProviders() {
 
 /** Row "Refresh models": re-discovers one provider's models, shows its checklist, then updates the picker. */
 async function refreshProviderModels(provider) {
+  if (panelChanged(provider.id)) {
+    return message(
+      `Save or clear the unsaved model selection for ${provider.name} before refreshing its models.`,
+      true
+    );
+  }
   message(`Refreshing models for ${provider.name}…`);
   await showProviderModels(provider.id, { force: true });
   await loadModels({ preferredModel: currentModel().model, preferredProvider: currentModel().modelProvider });
@@ -518,10 +524,14 @@ async function saveProvider(refresh = false) {
   const providerId = result.provider.id;
   closeProviderForm();
   ensurePanel(providerId).open = true;
+  const keepTicks = panelChanged(providerId);
   await loadProviders();
   // The checklist loads first so the picker reload below reads a warm catalog (no second discovery).
-  await showProviderModels(providerId, { force: refresh });
+  // A checklist with unsaved ticks is left alone so a reload cannot discard them.
+  if (!keepTicks) await showProviderModels(providerId, { force: refresh });
   await loadModels({ preferredProvider: providerId });
+  if (keepTicks)
+    return message('Provider saved. Your unsaved model selection was kept; click Save selection to apply it.');
   const panel = ensurePanel(providerId);
   if (panel.status === 'failed')
     return message(`Provider saved, but models could not be checked: ${panel.error}`, true);

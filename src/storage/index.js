@@ -5,7 +5,7 @@
  */
 
 export { initializeStorage, PROVIDER_MIGRATION_VERSION } from './migrations.js';
-export { isProviderReady, normalizeProvider, normalizeProviders } from './normalize.js';
+export { isModelSelectable, isProviderReady, normalizeProvider, normalizeProviders } from './normalize.js';
 export { loadSettings, loadSettingsWithSession, saveDefaultSettings, saveSessionSettings } from './settings.js';
 export { getAutoSelectedModel, getProviders, removeProvider, saveProvider } from './providers.js';
 export { getFavoriteModels, toggleFavoriteModel } from './favorites.js';
